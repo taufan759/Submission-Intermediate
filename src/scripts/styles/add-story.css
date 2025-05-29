@@ -1,0 +1,216 @@
+/* Enhanced styling for Add Story Page */
+.add-story-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.add-story-container h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+.add-story-container h2 .text-primary {
+  color: #3a86ff;
+}
+
+.add-story-container h2 .text-secondary {
+  color: #ff5e5b;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+textarea#description {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+textarea#description:focus {
+  outline: none;
+  border-color: #3a86ff;
+  box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.25);
+}
+
+.camera-section, .location-section {
+  background-color: #f8f9fc;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3a86ff;
+}
+
+.camera-section h3, .location-section h3 {
+  margin-top: 0;
+  color: #3a86ff;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.camera-preview {
+  width: 100%;
+  height: 300px;
+  background-color: #eaeaea;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+#cameraFeed, #capturedImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.camera-controls button {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.camera-controls button:hover:not(:disabled) {
+  background-color: #3a86ff;
+  color: white;
+  border-color: #3a86ff;
+}
+
+.camera-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#pickLocationMap {
+  width: 100%;
+  height: 300px;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.location-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.location-info p {
+  margin: 0;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.5rem;
+}
+
+.submit-btn {
+  background-color: #3a86ff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto;
+}
+
+.submit-btn:hover {
+  background-color: #2667cc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(58, 134, 255, 0.25);
+}
+
+#messageContainer {
+  margin-bottom: 1rem;
+}
+
+.message {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.message.success {
+  background-color: rgba(6, 214, 160, 0.1);
+  border-left: 4px solid #06d6a0;
+  color: #06d6a0;
+}
+
+.message.error {
+  background-color: rgba(239, 71, 111, 0.1);
+  border-left: 4px solid #ef476f;
+  color: #ef476f;
+}
+
+.loading-indicator {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 1rem 0;
+}
+
+.loading-indicator i {
+  animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .add-story-container {
+    padding: 1.25rem;
+    margin: 1rem;
+  }
+  
+  .camera-preview, #pickLocationMap {
+    height: 250px;
+  }
+  
+  .camera-controls {
+    grid-template-columns: 1fr;
+  }
+}

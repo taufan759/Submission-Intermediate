@@ -1,0 +1,134 @@
+/* Homepage Content Styles */
+.featured-stories,
+.how-it-works,
+.testimonials {
+  padding: 3rem 0;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--color-primary);
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  display: block;
+  width: 50px;
+  height: 3px;
+  background: var(--color-accent);
+  margin: 0.5rem auto 0;
+}
+
+/* Featured Stories */
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.featured-placeholder {
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: rgba(58, 134, 255, 0.05);
+  border-radius: 8px;
+  border: 1px dashed rgba(58, 134, 255, 0.3);
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+/* How It Works */
+.steps-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.step-card {
+  text-align: center;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease;
+}
+
+.step-card:hover {
+  transform: translateY(-5px);
+}
+
+.step-icon {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(58, 134, 255, 0.1);
+  color: var(--color-primary);
+  border-radius: 50%;
+  font-size: 1.75rem;
+  margin: 0 auto 1rem;
+}
+
+/* Testimonials */
+.testimonial-carousel {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.testimonial-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.testimonial-content {
+  font-style: italic;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+  color: #4a4a4a;
+}
+
+.testimonial-author {
+  display: flex;
+  align-items: center;
+}
+
+.author-avatar {
+  font-size: 2.5rem;
+  color: #adb5bd;
+  margin-right: 1rem;
+}
+
+.author-info h4 {
+  margin: 0;
+  color: #333;
+}
+
+.author-info p {
+  margin: 0;
+  color: #6c757d;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .featured-stories,
+  .how-it-works,
+  .testimonials {
+    padding: 2rem 1rem;
+  }
+  
+  .steps-container {
+    gap: 1rem;
+  }
+  
+  .step-card {
+    padding: 1.5rem;
+  }
+}

@@ -1,0 +1,22 @@
+{
+    "name": "story-app",
+    "version": "1.0.0",
+    "description": "Aplikasi Berbagi Cerita dengan SPA dan Fitur Peta dengan judul Peta Bicara, Cerita Bermakna",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "keywords": [
+        "story",
+        "spa",
+        "maps",
+        "dicoding"
+    ],
+    "author": "Test",
+    "license": "MIT",
+    "devDependencies": {
+        "@vitejs/plugin-legacy": "^6.1.1",
+        "vite": "^6.3.5"
+    }
+}
