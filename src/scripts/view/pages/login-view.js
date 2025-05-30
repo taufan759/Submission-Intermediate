@@ -307,4 +307,14 @@ class LoginView {
             setTimeout(() => alertElement.remove(), 500);
         }, 2000);
     }
+    
+    // Add missing methods
+    scheduleNavigation(callback, delay = 1000) {
+        setTimeout(callback, delay);
+    }
+    
+    dispatchAuthChange() {
+        // Dispatch auth change event
+        window.dispatchEvent(new Event('authChanged'));
+    }
 }

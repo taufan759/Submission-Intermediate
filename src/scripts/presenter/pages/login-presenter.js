@@ -14,6 +14,34 @@ class LoginPresenter {
     init() {
         console.log('LoginPresenter initialized');
     }
+    async handleLogin(email, password) {
+  try {
+    // Show loading state
+    this.view.showLoading();
+    
+    // Attempt login
+    const result = await this.apiService.login(email, password);
+    
+    if (result && !result.error) {
+      // Login successful
+      console.log('Login successful');
+      
+      // Dispatch auth change event
+      if (window.appView) {
+        window.appView.dispatchAuthChange();
+      } else {
+        // Fallback: dispatch event directly
+        window.dispatchEvent(new Event('authChanged'));
+      }
+      
+      // Navigate to home
+      this.router.navigateTo('/');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    this.view.showError(error.message);
+  }
+}
 
     async onLoginSubmit(email, password) {
         // Let the view validate the form first

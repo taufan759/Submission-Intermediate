@@ -229,4 +229,9 @@ class RegisterView {
             setTimeout(() => alertElement.remove(), 500);
         }, 2000);
     }
+    
+    // Add missing method
+    scheduleNavigation(callback, delay = 1000) {
+        setTimeout(callback, delay);
+    }
 }

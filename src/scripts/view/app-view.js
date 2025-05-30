@@ -1,5 +1,3 @@
-// Enhanced app-view.js - Complete DOM manipulation handler
-
 class AppView {
   constructor() {
     this.mainContent = document.getElementById('mainContent');
@@ -146,6 +144,7 @@ class AppView {
     }
   }
   
+  // Add missing methods
   setupAuthChangeListener(callback) {
     // Listen for storage events (when auth status changes)
     window.addEventListener('storage', (e) => {
@@ -166,6 +165,7 @@ class AppView {
   reloadPage() {
     window.location.reload();
   }
+  
   // View transition method - handles UI transitions
   applyViewTransition() {
     const mainContent = document.getElementById('mainContent');

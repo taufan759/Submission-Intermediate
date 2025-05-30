@@ -386,7 +386,7 @@ class AddStoryView {
     this.showMessage(message, "error");
   }
 
-  destroy() {
+   destroy() {
     console.log('Destroying add story view');
     
     // Stop camera if active
@@ -398,6 +398,17 @@ class AddStoryView {
     if (this._map) {
       this._map.remove();
       this._map = null;
+    }
+  }
+  
+  // Add missing methods
+  scheduleNavigation(callback, delay = 1000) {
+    setTimeout(callback, delay);
+  }
+  
+  navigateToRoute(route) {
+    if (window.router) {
+      window.router.navigateTo(route);
     }
   }
 }
