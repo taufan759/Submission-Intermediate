@@ -65,13 +65,14 @@ class Router {
     });
 
     if (route) {
-      if (route.requiresAuth && !isAuthenticated) {
+      // Prevent redirect loop
+      if (route.requiresAuth && !isAuthenticated && url !== '/masuk') {
         console.log('Halaman memerlukan login. Mengalihkan ke halaman login...');
         this.navigateTo('/masuk');
         return;
       }
       
-      if (route.guestOnly && isAuthenticated) {
+      if (route.guestOnly && isAuthenticated && url !== '/') {
         console.log('Halaman hanya untuk tamu. Mengalihkan ke beranda...');
         this.navigateTo('/');
         return;

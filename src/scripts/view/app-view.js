@@ -146,6 +146,26 @@ class AppView {
     }
   }
   
+  setupAuthChangeListener(callback) {
+    // Listen for storage events (when auth status changes)
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'token' || e.key === 'user') {
+        callback();
+      }
+    });
+    
+    // Custom event for auth changes
+    window.addEventListener('authChanged', callback);
+  }
+  
+  dispatchAuthChange() {
+    // Dispatch custom event when auth status changes
+    window.dispatchEvent(new Event('authChanged'));
+  }
+  
+  reloadPage() {
+    window.location.reload();
+  }
   // View transition method - handles UI transitions
   applyViewTransition() {
     const mainContent = document.getElementById('mainContent');

@@ -118,6 +118,22 @@ class ApiService {
       throw new Error(`Failed to add story: ${error.message}`);
     }
   }
+  
+  // Add authentication helper methods
+  isAuthenticated() {
+    const token = localStorage.getItem('token');
+    return !!token;
+  }
+  
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+  
+  getCurrentUser() {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  }
 }
 
 // Create global apiService instance

@@ -166,6 +166,13 @@ self.addEventListener('sync', (event) => {
   }
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('Received SKIP_WAITING, calling skipWaiting()');
+    self.skipWaiting();
+  }
+});
+
 // Sync offline stories when connection is restored
 async function syncOfflineStories() {
   // Example: Sync stories from IndexedDB (you would need to implement IndexedDB logic)
