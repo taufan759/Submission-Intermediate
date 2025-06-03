@@ -1,3 +1,4 @@
+// src/scripts/view/app-view.js
 class AppView {
   constructor() {
     this.mainContent = document.getElementById('mainContent');
@@ -47,6 +48,24 @@ class AppView {
     const registerView = new RegisterView();
     registerView.render();
     return registerView;
+  }
+  
+  // METHOD BARU - Render Favorites Page
+  renderFavoritesPage() {
+    this.clearContent();
+    
+    const favoritesView = new FavoritesView();
+    favoritesView.render();
+    return favoritesView;
+  }
+  
+  // METHOD BARU - Render Settings Page
+  renderSettingsPage() {
+    this.clearContent();
+    
+    const settingsView = new SettingsView();
+    settingsView.render();
+    return settingsView;
   }
   
   clearContent() {
@@ -126,6 +145,40 @@ class AppView {
         });
       } else {
         authNavItem.innerHTML = `<a href="#/masuk"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Masuk</a>`;
+      }
+    }
+    
+    // UPDATE: Tambah/update navigasi pengaturan
+    this._updateSettingsNavigation(isLoggedIn);
+  }
+  
+  // METHOD BARU - Update settings navigation
+  _updateSettingsNavigation(isLoggedIn) {
+    const navMenu = document.querySelector('.nav-menu');
+    if (!navMenu) return;
+
+    // Cari atau buat link pengaturan
+    let settingsLink = navMenu.querySelector('a[href="#/pengaturan"]');
+    
+    if (isLoggedIn && !settingsLink) {
+      // Tambah link pengaturan jika belum ada
+      const authNavItem = document.getElementById('authNavItem');
+      if (authNavItem) {
+        const settingsLi = document.createElement('li');
+        settingsLi.className = 'auth-required-nav';
+        settingsLi.innerHTML = `
+          <a href="#/pengaturan">
+            <i class="fas fa-cog" aria-hidden="true"></i> 
+            Pengaturan
+          </a>
+        `;
+        authNavItem.parentNode.insertBefore(settingsLi, authNavItem);
+      }
+    } else if (!isLoggedIn && settingsLink) {
+      // Hapus link pengaturan jika tidak login
+      const settingsNavItem = settingsLink.closest('.auth-required-nav');
+      if (settingsNavItem) {
+        settingsNavItem.remove();
       }
     }
   }

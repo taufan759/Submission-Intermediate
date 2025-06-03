@@ -50,6 +50,7 @@
           <li><a href="#/" aria-current="page"><i class="fas fa-home" aria-hidden="true"></i> Beranda</a></li>
           <li><a href="#/tambah"><i class="fas fa-plus-circle" aria-hidden="true"></i> Tambah Cerita</a></li>
           <li><a href="#/peta"><i class="fas fa-map" aria-hidden="true"></i> Peta Cerita</a></li>
+          <!-- Favorit dan Pengaturan akan ditambahkan via JavaScript saat login -->
           <li id="authNavItem"><a href="#/masuk"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> <span id="authNavText">Masuk</span></a></li>
         </ul>
       </nav>
@@ -126,10 +127,10 @@
     </article>
   </template>
 
-  <!-- Leaflet -->
+  <!-- External Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   
-  <!-- Utils -->
+  <!-- Utils (yang sudah ada) -->
   <script src="src/scripts/utils/router.js"></script>
   <script src="src/scripts/utils/camera-helper.js"></script>
   <script src="src/scripts/utils/indexeddb-helper.js"></script>
@@ -137,6 +138,9 @@
   <script src="src/scripts/utils/service-worker-register.js"></script>
   <script src="src/scripts/utils/debug-tools.js"></script>
 
+  <!-- Utils Baru untuk Fitur -->
+  <script src="src/scripts/utils/favorites-helper.js"></script>
+  <script src="src/scripts/utils/notification-ui-helper.js"></script>
   
   <!-- API -->
   <script src="src/scripts/api/api-service.js"></script>
@@ -149,23 +153,31 @@
   <script src="src/scripts/view/components/navbar.js"></script>
   <script src="src/scripts/view/components/story-card.js"></script>
   
-  <!-- Views -->
+  <!-- Views (yang sudah ada) -->
   <script src="src/scripts/view/pages/add-story-view.js"></script>
   <script src="src/scripts/view/pages/home-view.js"></script>
   <script src="src/scripts/view/pages/login-view.js"></script>
   <script src="src/scripts/view/pages/register-view.js"></script>
   <script src="src/scripts/view/pages/map-view.js"></script>
+  
+  <!-- Views Baru -->
+  <script src="src/scripts/view/pages/favorites-view.js"></script>
+  <script src="src/scripts/view/pages/settings-view.js"></script>
   <script src="src/scripts/view/app-view.js"></script>
   
-  <!-- Presenters -->
+  <!-- Presenters (yang sudah ada) -->
   <script src="src/scripts/presenter/pages/home-presenter.js"></script>
   <script src="src/scripts/presenter/pages/add-story-presenter.js"></script>
   <script src="src/scripts/presenter/pages/login-presenter.js"></script>
   <script src="src/scripts/presenter/pages/register-presenter.js"></script>
   <script src="src/scripts/presenter/pages/map-presenter.js"></script>
+  
+  <!-- Presenters Baru -->
+  <script src="src/scripts/presenter/pages/favorites-presenter.js"></script>
+  <script src="src/scripts/presenter/pages/settings-presenter.js"></script>
   <script src="src/scripts/presenter/app-presenter.js"></script>
   
   <!-- App Entry Point -->
-<script src="src/scripts/app.js"></script>
+  <script src="src/scripts/app.js"></script>
 </body>
 </html>
