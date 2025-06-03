@@ -1,27 +1,62 @@
-// src/scripts/utils/notification-ui-helper.js
 
 class NotificationUIHelper {
   constructor() {
-    this.pushHelper = window.pushNotificationHelper;
+    this.pushHelper = null;
     this.isReady = false;
+    this.retryCount = 0;
+    this.maxRetries = 5;
   }
 
   async init() {
+    console.log('NotificationUIHelper: Initializing...');
+    
+    // Wait for push helper to be available
+    await this.waitForPushHelper();
+    
     if (this.pushHelper) {
-      await this.pushHelper.init();
-      this.isReady = true;
-      console.log('NotificationUIHelper initialized');
+      try {
+        await this.pushHelper.init();
+        this.isReady = true;
+        console.log('NotificationUIHelper: Successfully initialized');
+        return true;
+      } catch (error) {
+        console.error('NotificationUIHelper: Init error:', error);
+        return false;
+      }
     } else {
-      console.warn('Push notification helper not found');
+      console.warn('NotificationUIHelper: Push helper not available after retries');
+      return false;
     }
+  }
+
+  async waitForPushHelper() {
+    return new Promise((resolve) => {
+      const checkHelper = () => {
+        if (window.pushNotificationHelper) {
+          this.pushHelper = window.pushNotificationHelper;
+          console.log('NotificationUIHelper: Push helper found');
+          resolve(true);
+        } else if (this.retryCount < this.maxRetries) {
+          this.retryCount++;
+          console.log(`NotificationUIHelper: Waiting for push helper (${this.retryCount}/${this.maxRetries})`);
+          setTimeout(checkHelper, 1000);
+        } else {
+          console.warn('NotificationUIHelper: Push helper not found after retries');
+          resolve(false);
+        }
+      };
+      checkHelper();
+    });
   }
 
   // Buat UI untuk pengaturan notifikasi
   createNotificationSettingsUI(container) {
     if (!container) {
-      console.error('Container not provided for notification settings');
+      console.error('NotificationUIHelper: Container not provided');
       return;
     }
+
+    console.log('NotificationUIHelper: Creating settings UI');
 
     const settingsHTML = `
       <div class="notification-settings-card">
@@ -31,7 +66,7 @@ class NotificationUIHelper {
         </div>
         
         <div class="notification-status" id="notificationStatus">
-          <div class="status-indicator" id="statusIndicator">
+          <div class="status-indicator info" id="statusIndicator">
             <i class="fas fa-circle"></i>
             <span id="statusText">Mengecek status...</span>
           </div>
@@ -59,6 +94,10 @@ class NotificationUIHelper {
             <i class="fas fa-info-circle"></i>
             Info Izin
           </button>
+          <button class="btn btn-secondary" id="debugBtn">
+            <i class="fas fa-bug"></i>
+            Debug
+          </button>
         </div>
         
         <div class="notification-info" id="notificationInfo" style="display: none;">
@@ -69,6 +108,11 @@ class NotificationUIHelper {
               <p>Notifikasi akan muncul bahkan ketika browser atau aplikasi ditutup. Pastikan izin notifikasi telah diberikan di pengaturan browser.</p>
             </div>
           </div>
+        </div>
+
+        <div class="debug-info" id="debugInfo" style="display: none;">
+          <h4>Debug Information:</h4>
+          <div id="debugContent">Loading...</div>
         </div>
       </div>
     `;
@@ -137,19 +181,28 @@ class NotificationUIHelper {
         color: #dc3545;
       }
 
-      .status-indicator.success + .notification-status {
+      .status-indicator.info {
+        color: #17a2b8;
+      }
+
+      .notification-status.success {
         border-left-color: #28a745;
         background: #f8fff9;
       }
 
-      .status-indicator.warning + .notification-status {
+      .notification-status.warning {
         border-left-color: #ffc107;
         background: #fffcf0;
       }
 
-      .status-indicator.error + .notification-status {
+      .notification-status.error {
         border-left-color: #dc3545;
         background: #fff5f5;
+      }
+
+      .notification-status.info {
+        border-left-color: #17a2b8;
+        background: #f0faff;
       }
 
       .notification-controls {
@@ -263,6 +316,15 @@ class NotificationUIHelper {
         background: #5a6268;
       }
 
+      .btn-secondary {
+        background: #fd7e14;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #e76500;
+      }
+
       .notification-info {
         margin-top: 1.5rem;
         padding: 1rem;
@@ -297,6 +359,30 @@ class NotificationUIHelper {
         font-size: 0.9rem;
       }
 
+      .debug-info {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #fff3cd;
+        border-radius: 8px;
+        border-left: 4px solid #ffc107;
+      }
+
+      .debug-info h4 {
+        margin: 0 0 1rem 0;
+        color: #856404;
+      }
+
+      #debugContent {
+        font-family: monospace;
+        font-size: 0.8rem;
+        background: #fff;
+        padding: 1rem;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
       @media (max-width: 768px) {
         .control-group {
           flex-direction: column;
@@ -319,29 +405,44 @@ class NotificationUIHelper {
 
   // Setup event listeners untuk notification controls
   setupNotificationEvents() {
+    console.log('NotificationUIHelper: Setting up events');
+    
     const toggle = document.getElementById('notificationToggle');
     const testBtn = document.getElementById('testNotificationBtn');
     const infoBtn = document.getElementById('permissionInfoBtn');
+    const debugBtn = document.getElementById('debugBtn');
 
-    // Toggle event
+    // Toggle event dengan error handling yang lebih baik
     if (toggle) {
+      console.log('NotificationUIHelper: Toggle found, adding listener');
+      
       toggle.addEventListener('change', async (e) => {
+        console.log('NotificationUIHelper: Toggle changed to:', e.target.checked);
+        
+        const originalChecked = e.target.checked;
         toggle.disabled = true;
         
         try {
-          if (e.target.checked) {
+          this.updateStatusText('Memproses...', 'info');
+          
+          if (originalChecked) {
+            console.log('NotificationUIHelper: Attempting to enable notifications');
             await this.enableNotifications();
           } else {
+            console.log('NotificationUIHelper: Attempting to disable notifications');
             await this.disableNotifications();
           }
         } catch (error) {
+          console.error('NotificationUIHelper: Toggle error:', error);
           // Revert toggle pada error
-          e.target.checked = !e.target.checked;
+          e.target.checked = !originalChecked;
           this.showNotificationMessage(error.message, 'error');
         } finally {
           toggle.disabled = false;
         }
       });
+    } else {
+      console.error('NotificationUIHelper: Toggle not found!');
     }
 
     // Test button event
@@ -353,30 +454,63 @@ class NotificationUIHelper {
     if (infoBtn) {
       infoBtn.addEventListener('click', () => this.showPermissionInfo());
     }
+
+    // Debug button event
+    if (debugBtn) {
+      debugBtn.addEventListener('click', () => this.toggleDebugInfo());
+    }
   }
 
   // Enable push notifications
   async enableNotifications() {
-    if (!this.isReady) await this.init();
+    console.log('NotificationUIHelper: Enabling notifications');
+    
+    if (!this.isReady) {
+      console.log('NotificationUIHelper: Not ready, initializing...');
+      const initialized = await this.init();
+      if (!initialized) {
+        throw new Error('Tidak dapat menginisialisasi push notification service');
+      }
+    }
     
     try {
-      this.updateStatusText('Mengaktifkan notifikasi...', 'info');
+      this.updateStatusText('Meminta izin notifikasi...', 'info');
+      
+      // Check permission first
+      if (Notification.permission === 'denied') {
+        throw new Error('Izin notifikasi ditolak. Silakan aktifkan di pengaturan browser.');
+      }
+      
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          throw new Error('Izin notifikasi tidak diberikan');
+        }
+      }
+      
+      this.updateStatusText('Mendaftarkan service worker...', 'info');
       
       const subscription = await this.pushHelper.subscribe();
       
       if (subscription) {
         this.showNotificationMessage('✅ Push notifikasi berhasil diaktifkan!', 'success');
         this.updateNotificationStatus();
+      } else {
+        throw new Error('Gagal membuat subscription');
       }
     } catch (error) {
-      console.error('Failed to enable notifications:', error);
+      console.error('NotificationUIHelper: Enable error:', error);
       throw new Error('Gagal mengaktifkan notifikasi: ' + error.message);
     }
   }
 
   // Disable push notifications
   async disableNotifications() {
-    if (!this.isReady) await this.init();
+    console.log('NotificationUIHelper: Disabling notifications');
+    
+    if (!this.isReady) {
+      await this.init();
+    }
     
     try {
       this.updateStatusText('Menonaktifkan notifikasi...', 'info');
@@ -386,71 +520,122 @@ class NotificationUIHelper {
       if (success) {
         this.showNotificationMessage('Push notifikasi berhasil dinonaktifkan', 'info');
         this.updateNotificationStatus();
+      } else {
+        throw new Error('Gagal membatalkan subscription');
       }
     } catch (error) {
-      console.error('Failed to disable notifications:', error);
+      console.error('NotificationUIHelper: Disable error:', error);
       throw new Error('Gagal menonaktifkan notifikasi: ' + error.message);
     }
   }
 
   // Test notification
   async testNotification() {
+    console.log('NotificationUIHelper: Testing notification');
+    
     try {
-      const success = await this.pushHelper.testNotification();
-      if (success) {
+      // Test basic notification first
+      if (Notification.permission === 'granted') {
+        new Notification('🧪 Test Notifikasi', {
+          body: 'Ini adalah test notifikasi dari Peta Bicara!',
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png'
+        });
         this.showNotificationMessage('🧪 Test notifikasi berhasil dikirim!', 'success');
       } else {
-        this.showNotificationMessage('❌ Gagal mengirim test notifikasi', 'error');
+        throw new Error('Izin notifikasi belum diberikan');
+      }
+      
+      // Also test via push helper if available
+      if (this.pushHelper && this.isReady) {
+        const success = await this.pushHelper.testNotification();
+        if (!success) {
+          console.warn('Push helper test failed, but basic notification worked');
+        }
       }
     } catch (error) {
-      console.error('Failed to test notification:', error);
+      console.error('NotificationUIHelper: Test error:', error);
       this.showNotificationMessage('Error: ' + error.message, 'error');
     }
   }
 
   // Update status notifikasi
   async updateNotificationStatus() {
-    if (!this.isReady) await this.init();
+    console.log('NotificationUIHelper: Updating status');
     
     const toggle = document.getElementById('notificationToggle');
     const testBtn = document.getElementById('testNotificationBtn');
     const notificationInfo = document.getElementById('notificationInfo');
 
     try {
-      if (!this.pushHelper) {
-        this.updateStatusText('Push notifikasi tidak didukung', 'error');
+      // Basic checks first
+      if (!('Notification' in window)) {
+        this.updateStatusText('Browser tidak mendukung notifikasi', 'error');
         if (toggle) toggle.disabled = true;
         return;
       }
 
-      const info = await this.pushHelper.getSubscriptionInfo();
-      
-      if (!info.isSupported) {
-        this.updateStatusText('Browser tidak mendukung push notifikasi', 'error');
+      if (!('serviceWorker' in navigator)) {
+        this.updateStatusText('Browser tidak mendukung service worker', 'error');
         if (toggle) toggle.disabled = true;
-      } else if (!info.hasPermission) {
-        this.updateStatusText('Izin notifikasi belum diberikan', 'warning');
+        return;
+      }
+
+      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+        this.updateStatusText('HTTPS diperlukan untuk push notification', 'error');
+        if (toggle) toggle.disabled = true;
+        return;
+      }
+
+      // Check permission
+      const permission = Notification.permission;
+      console.log('NotificationUIHelper: Permission status:', permission);
+
+      if (permission === 'denied') {
+        this.updateStatusText('Izin notifikasi ditolak', 'error');
         if (toggle) toggle.checked = false;
         if (testBtn) testBtn.style.display = 'none';
-      } else if (!info.isSubscribed) {
-        this.updateStatusText('Push notifikasi tidak aktif', 'warning');
+        return;
+      }
+
+      if (permission === 'default') {
+        this.updateStatusText('Izin notifikasi belum diminta', 'warning');
         if (toggle) toggle.checked = false;
         if (testBtn) testBtn.style.display = 'none';
+        return;
+      }
+
+      // Permission granted - check subscription
+      if (this.pushHelper && this.isReady) {
+        const info = await this.pushHelper.getSubscriptionInfo();
+        console.log('NotificationUIHelper: Subscription info:', info);
+        
+        if (info.isSubscribed) {
+          this.updateStatusText('Push notifikasi aktif dan siap', 'success');
+          if (toggle) toggle.checked = true;
+          if (testBtn) testBtn.style.display = 'inline-flex';
+          if (notificationInfo) notificationInfo.style.display = 'block';
+        } else {
+          this.updateStatusText('Push notifikasi tidak aktif', 'warning');
+          if (toggle) toggle.checked = false;
+          if (testBtn) testBtn.style.display = 'none';
+        }
       } else {
-        this.updateStatusText('Push notifikasi aktif dan siap', 'success');
-        if (toggle) toggle.checked = true;
-        if (testBtn) testBtn.style.display = 'inline-flex';
-        if (notificationInfo) notificationInfo.style.display = 'block';
+        this.updateStatusText('Push service tidak tersedia', 'warning');
+        if (toggle) toggle.checked = false;
+        if (testBtn) testBtn.style.display = 'none';
       }
       
     } catch (error) {
-      console.error('Error checking notification status:', error);
+      console.error('NotificationUIHelper: Status check error:', error);
       this.updateStatusText('Gagal mengecek status notifikasi', 'error');
     }
   }
 
   // Update status text
   updateStatusText(text, type) {
+    console.log(`NotificationUIHelper: Status - ${type}: ${text}`);
+    
     const statusIndicator = document.getElementById('statusIndicator');
     const statusText = document.getElementById('statusText');
     const notificationStatus = document.getElementById('notificationStatus');
@@ -463,6 +648,48 @@ class NotificationUIHelper {
     // Update background color
     if (notificationStatus) {
       notificationStatus.className = `notification-status ${type}`;
+    }
+  }
+
+  // Toggle debug info
+  async toggleDebugInfo() {
+    const debugInfo = document.getElementById('debugInfo');
+    const debugContent = document.getElementById('debugContent');
+    
+    if (debugInfo.style.display === 'none') {
+      debugInfo.style.display = 'block';
+      
+      // Collect debug information
+      const debug = {
+        timestamp: new Date().toISOString(),
+        browser: navigator.userAgent,
+        protocol: window.location.protocol,
+        hostname: window.location.hostname,
+        notificationSupport: 'Notification' in window,
+        serviceWorkerSupport: 'serviceWorker' in navigator,
+        pushManagerSupport: 'PushManager' in window,
+        notificationPermission: Notification.permission,
+        pushHelperAvailable: !!this.pushHelper,
+        pushHelperReady: this.isReady,
+        serviceWorkerRegistered: null,
+        pushSubscription: null
+      };
+      
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        debug.serviceWorkerRegistered = !!registration;
+        
+        if (registration) {
+          const subscription = await registration.pushManager.getSubscription();
+          debug.pushSubscription = !!subscription;
+        }
+      } catch (error) {
+        debug.error = error.message;
+      }
+      
+      debugContent.textContent = JSON.stringify(debug, null, 2);
+    } else {
+      debugInfo.style.display = 'none';
     }
   }
 
@@ -537,6 +764,8 @@ class NotificationUIHelper {
 
   // Show notification message
   showNotificationMessage(message, type = 'info') {
+    console.log(`NotificationUIHelper: Message - ${type}: ${message}`);
+    
     // Remove existing message
     const existing = document.querySelector('.notification-message');
     if (existing) existing.remove();
@@ -582,10 +811,14 @@ class NotificationUIHelper {
 // Initialize dan expose globally
 const notificationUIHelper = new NotificationUIHelper();
 
-// Setup saat DOM ready
+// Setup saat DOM ready dengan delay yang cukup
 document.addEventListener('DOMContentLoaded', () => {
-  notificationUIHelper.init();
-  console.log('NotificationUIHelper ready');
+  // Wait for other scripts to load first
+  setTimeout(async () => {
+    console.log('NotificationUIHelper: Starting initialization');
+    await notificationUIHelper.init();
+    console.log('NotificationUIHelper: Ready for use');
+  }, 2000);
 });
 
 // Add slide animations
