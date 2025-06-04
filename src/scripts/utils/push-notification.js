@@ -81,9 +81,10 @@ class PushNotificationHelper {
       
       // Subscribe to push notifications
       this.subscription = await this.registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: applicationServerKey
-      });
+  userVisibleOnly: true,
+  applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey)
+});
+
       
       console.log('Push subscription successful:', this.subscription);
       
@@ -174,17 +175,6 @@ class PushNotificationHelper {
           dateOfArrival: Date.now(),
           primaryKey: 1
         },
-        actions: [
-          {
-            action: 'explore',
-            title: 'Lihat',
-            icon: '/icons/shortcut-map.png'
-          },
-          {
-            action: 'close',
-            title: 'Tutup'
-          }
-        ]
       });
       
       notification.addEventListener('click', () => {
