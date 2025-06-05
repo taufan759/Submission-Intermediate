@@ -1,4 +1,4 @@
-// Push Notification Helper untuk Peta Bicara
+// Push Notification 
 class PushNotificationHelper {
   constructor() {
     // VAPID Keys (Public Key) - Replace with your actual VAPID keys
@@ -73,7 +73,10 @@ class PushNotificationHelper {
       
       // Initialize if not already done
       if (!this.registration) {
-        await this.init();
+        const initialized = await this.init();
+        if (!initialized) {
+          throw new Error('Failed to initialize service worker');
+        }
       }
       
       // Convert VAPID key
@@ -81,10 +84,9 @@ class PushNotificationHelper {
       
       // Subscribe to push notifications
       this.subscription = await this.registration.pushManager.subscribe({
-  userVisibleOnly: true,
-  applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey)
-});
-
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey
+      });
       
       console.log('Push subscription successful:', this.subscription);
       
@@ -94,11 +96,10 @@ class PushNotificationHelper {
       // Save subscription locally
       await this.saveSubscriptionLocally(this.subscription);
       
-      // Show success notification
-      this.showLocalNotification(
+      // Show success notification via Service Worker (supports actions)
+      await this.showServiceWorkerNotification(
         'Notifikasi Aktif!',
-        'Kamu akan mendapat notifikasi untuk cerita baru dan update terbaru.',
-        '/icons/icon-192x192.png'
+        'Kamu akan mendapat notifikasi untuk cerita baru dan update terbaru.'
       );
       
       return this.subscription;
@@ -158,23 +159,77 @@ class PushNotificationHelper {
     }
   }
   
-  // Show local notification (for testing)
-  showLocalNotification(title, body, icon = '/icons/icon-192x192.png') {
-    if (!this.isSupported) {
-      console.warn('Notifications not supported');
-      return;
+  // Show notification via Service Worker (supports actions)
+  async showServiceWorkerNotification(title, body, options = {}) {
+    if (!this.registration) {
+      console.warn('Service Worker not registered');
+      return false;
     }
     
-    if (Notification.permission === 'granted') {
-      const notification = new Notification(title, {
+    try {
+      const defaultOptions = {
         body: body,
-        icon: icon,
-        badge: '/icons/icon-72x72.png',
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
         vibrate: [100, 50, 100],
         data: {
           dateOfArrival: Date.now(),
-          primaryKey: 1
+          primaryKey: Math.random(),
+          url: '/'
         },
+        actions: [
+          {
+            action: 'open',
+            title: 'Buka App',
+            icon: '/favicon.ico'
+          },
+          {
+            action: 'close',
+            title: 'Tutup'
+          }
+        ],
+        requireInteraction: false,
+        silent: false,
+        tag: 'peta-bicara-notification'
+      };
+      
+      const finalOptions = { ...defaultOptions, ...options };
+      
+      await this.registration.showNotification(title, finalOptions);
+      console.log('Service Worker notification shown successfully');
+      return true;
+    } catch (error) {
+      console.error('Error showing Service Worker notification:', error);
+      return false;
+    }
+  }
+  
+  // Show basic notification (no actions) - FIXED VERSION
+  showBasicNotification(title, body, icon = '/favicon.ico') {
+    if (!this.isSupported) {
+      console.warn('Notifications not supported');
+      return false;
+    }
+    
+    if (Notification.permission !== 'granted') {
+      console.warn('Notification permission not granted');
+      return false;
+    }
+    
+    try {
+      // Basic notification WITHOUT actions (this fixes the error)
+      const notification = new Notification(title, {
+        body: body,
+        icon: icon,
+        badge: '/favicon.ico',
+        vibrate: [100, 50, 100],
+        data: {
+          dateOfArrival: Date.now(),
+          primaryKey: Math.random()
+        },
+        silent: false,
+        tag: 'peta-bicara-basic'
+        // NO ACTIONS HERE - this was causing the error
       });
       
       notification.addEventListener('click', () => {
@@ -190,11 +245,22 @@ class PushNotificationHelper {
         console.error('Notification error:', e);
       });
       
-      // Auto close after 5 seconds
+      // Auto close after 8 seconds
       setTimeout(() => {
         notification.close();
-      }, 5000);
+      }, 8000);
+      
+      console.log('Basic notification shown successfully');
+      return true;
+    } catch (error) {
+      console.error('Error showing basic notification:', error);
+      return false;
     }
+  }
+  
+  // Alias for backward compatibility
+  showLocalNotification(title, body, icon) {
+    return this.showBasicNotification(title, body, icon);
   }
   
   // Send subscription to server (you'll need to implement server-side)
@@ -344,20 +410,41 @@ class PushNotificationHelper {
     return outputArray;
   }
   
-  // Test push notification
+  // Test push notification - FIXED VERSION
   async testNotification() {
     try {
-      if (await this.isSubscribed()) {
-        this.showLocalNotification(
-          'Test Notifikasi',
-          'Ini adalah test notifikasi dari Peta Bicara. Notifikasi berfungsi dengan baik!',
-          '/icons/icon-192x192.png'
-        );
-        return true;
-      } else {
-        console.warn('Not subscribed to push notifications');
-        return false;
+      console.log('Testing notification...');
+      
+      if (Notification.permission !== 'granted') {
+        throw new Error('Izin notifikasi belum diberikan');
       }
+      
+      // Try Service Worker notification first (with actions)
+      if (this.registration) {
+        console.log('Showing test notification via Service Worker...');
+        const swSuccess = await this.showServiceWorkerNotification(
+          '🧪 Test Notifikasi',
+          'Ini adalah test notifikasi dari Peta Bicara!\nNotifikasi melalui Service Worker berfungsi dengan baik!',
+          {
+            tag: 'test-notification',
+            data: { test: true, url: '/' }
+          }
+        );
+        
+        if (swSuccess) {
+          return true;
+        }
+      }
+      
+      // Fallback to basic notification (no actions)
+      console.log('Showing test notification via basic notification...');
+      const basicSuccess = this.showBasicNotification(
+        '🧪 Test Notifikasi', 
+        'Ini adalah test notifikasi dari Peta Bicara!\nNotifikasi dasar berfungsi dengan baik!'
+      );
+      
+      return basicSuccess;
+      
     } catch (error) {
       console.error('Error testing push notification:', error);
       return false;
