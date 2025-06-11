@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peta Bicara - Cerita Bermakna</title>
+  <meta name="description" content="Berbagi cerita berdasarkan lokasi - Jelajahi dunia dari sudut pandang yang berbeda">
+
+  <!-- Preconnect to external resources -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  
+  <!-- manifest json -->
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  
+  <!-- App Styles -->
+  <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+  <!-- Skip link for accessibility -->
+  <a href="#mainContent" class="skip-link">Langsung ke konten utama</a>
+  
+  <header class="app-header">
+    <div class="container">
+      <h1 class="app-brand">
+        <a href="#/" aria-label="Beranda Peta Bicara">
+          <i class="fas fa-map-marked-alt" aria-hidden="true"></i>
+          <span>Peta<span class="accent">Bicara</span></span>
+        </a>
+      </h1>
+      
+      <nav id="mainNav" aria-label="Navigasi utama">
+        <button id="navToggle" aria-expanded="false" aria-label="Buka menu navigasi">
+          <i class="fas fa-bars" aria-hidden="true"></i>
+        </button>
+        
+        <ul class="nav-menu">
+          <li><a href="#/" aria-current="page"><i class="fas fa-home" aria-hidden="true"></i> Beranda</a></li>
+          <li><a href="#/tambah"><i class="fas fa-plus-circle" aria-hidden="true"></i> Tambah Cerita</a></li>
+          <li><a href="#/peta"><i class="fas fa-map" aria-hidden="true"></i> Peta Cerita</a></li>
+          <li id="authNavItem"><a href="#/masuk"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> <span id="authNavText">Masuk</span></a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="mainContent" tabindex="-1">
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Memuat...</p>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <h2><i class="fas fa-map-marked-alt" aria-hidden="true"></i> PetaBicara</h2>
+          <p>Berbagi cerita berdasarkan lokasi di seluruh Indonesia</p>
+        </div>
+        
+        <div class="footer-links">
+          <h3>Navigasi</h3>
+          <ul>
+            <li><a href="#/">Beranda</a></li>
+            <li><a href="#/tambah">Tambah Cerita</a></li>
+            <li><a href="#/peta">Peta Cerita</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-contact">
+          <h3>Aksesibilitas</h3>
+          <p>Aplikasi ini dirancang dengan memperhatikan standar aksesibilitas WCAG 2.1</p>
+          <p><i class="fas fa-universal-access" aria-hidden="true"></i> Dioptimalkan untuk pembaca layar</p>
+        </div>
+      </div>
+      
+      <div class="footer-copyright">
+        <p>&copy; 2025 PetaBicara - Submission Dicoding FEWDE</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- App Template Elements -->
+  <template id="story-card-template">
+    <article class="story-card">
+      <div class="story-image-container">
+        <img class="story-image" src="" alt="">
+        <div class="story-location-badge">
+          <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+          <span class="location-text"></span>
+        </div>
+      </div>
+      <div class="story-content">
+        <header>
+          <h3 class="story-title"></h3>
+          <p class="story-meta">
+            <span class="story-author">
+              <i class="fas fa-user" aria-hidden="true"></i>
+              <span class="author-name"></span>
+            </span>
+            <time class="story-date"></time>
+          </p>
+        </header>
+        <div class="story-description"></div>
+        <footer class="story-footer">
+          <button class="btn-view-on-map">
+            <i class="fas fa-map-pin" aria-hidden="true"></i>
+            Lihat di Peta
+          </button>
+        </footer>
+      </div>
+    </article>
+  </template>
+
+  <!-- External Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  
+  <!-- Main Entry Point -->
+  <script type="module" src="/src/scripts/main.js"></script>
+</body>
+</html>

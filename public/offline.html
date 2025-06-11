@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - Peta Bicara</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+      padding: 2rem;
+    }
+    
+    .offline-container {
+      max-width: 500px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 3rem 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .offline-icon {
+      font-size: 5rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.8;
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .offline-title {
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+    
+    .offline-message {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+    }
+    
+    .offline-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    .btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 0.8rem 2rem;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 200px;
+      justify-content: center;
+    }
+    
+    .btn:hover, .btn:focus {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-primary {
+      background: rgba(33, 150, 243, 0.8);
+      border-color: rgba(33, 150, 243, 0.9);
+    }
+    
+    .btn-primary:hover, .btn-primary:focus {
+      background: rgba(33, 150, 243, 1);
+      border-color: rgba(33, 150, 243, 1);
+    }
+    
+    .offline-features {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .feature-list {
+      list-style: none;
+      text-align: left;
+      margin-top: 1rem;
+    }
+    
+    .feature-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      font-size: 0.95rem;
+    }
+    
+    .feature-icon {
+      margin-right: 0.8rem;
+      color: #4CAF50;
+      font-size: 1.2rem;
+    }
+    
+    .connection-status {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(244, 67, 54, 0.9);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: pulse 2s infinite;
+    }
+    
+    .connection-status.online {
+      background: rgba(76, 175, 80, 0.9);
+      animation: none;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    @media (max-width: 600px) {
+      .offline-container {
+        padding: 2rem 1.5rem;
+      }
+      
+      .offline-title {
+        font-size: 2rem;
+      }
+      
+      .offline-icon {
+        font-size: 4rem;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="connection-status" id="connectionStatus">
+    <span id="connectionIcon">📶</span>
+    <span id="connectionText">Offline</span>
+  </div>
+
+  <div class="offline-container">
+    <div class="offline-icon">📡</div>
+    <h1 class="offline-title">Kamu Sedang Offline</h1>
+    <p class="offline-message">
+      Tidak ada koneksi internet saat ini. Tapi jangan khawatir! 
+      Kamu masih bisa menggunakan beberapa fitur Peta Bicara.
+    </p>
+    
+    <div class="offline-actions">
+      <button class="btn btn-primary" onclick="checkConnection()">
+        <span>🔄</span>
+        Cek Koneksi
+      </button>
+      
+      <a href="/#/" class="btn">
+        <span>🏠</span>
+        Kembali ke Beranda
+      </a>
+      
+      <a href="/#/favorit" class="btn">
+        <span>❤️</span>
+        Lihat Favorit
+      </a>
+    </div>
+    
+    <div class="offline-features">
+      <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Fitur yang Tersedia Offline:</h3>
+      <ul class="feature-list">
+        <li class="feature-item">
+          <span class="feature-icon">✅</span>
+          Lihat cerita yang sudah tersimpan
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon">✅</span>
+          Akses cerita favorit
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon">✅</span>
+          Buat cerita baru (akan dikirim saat online)
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon">✅</span>
+          Navigasi antar halaman
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Monitor connection status
+    function updateConnectionStatus() {
+      const status = document.getElementById('connectionStatus');
+      const icon = document.getElementById('connectionIcon');
+      const text = document.getElementById('connectionText');
+      
+      if (navigator.onLine) {
+        status.classList.add('online');
+        icon.textContent = '🌐';
+        text.textContent = 'Online';
+        
+        // Auto redirect to home when back online
+        setTimeout(() => {
+          window.location.href = '/#/';
+        }, 2000);
+      } else {
+        status.classList.remove('online');
+        icon.textContent = '📶';
+        text.textContent = 'Offline';
+      }
+    }
+    
+    // Check connection manually
+    function checkConnection() {
+      const btn = event.target.closest('.btn');
+      const originalText = btn.innerHTML;
+      
+      btn.innerHTML = '⏳ Mengecek...';
+      btn.disabled = true;
+      
+      // Force a network request to test connectivity
+      fetch('https://story-api.dicoding.dev/v1/stories', {
+        mode: 'no-cors',
+        cache: 'no-cache'
+      })
+      .then(() => {
+        // If we reach here, we're likely online
+        updateConnectionStatus();
+      })
+      .catch(() => {
+        // Still offline
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }, 1000);
+      });
+    }
+    
+    // Listen for online/offline events
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    
+    // Initial status check
+    updateConnectionStatus();
+    
+    // Periodic connection check
+    setInterval(() => {
+      if (navigator.onLine) {
+        // Double check with actual network request
+        fetch('https://story-api.dicoding.dev/v1/stories', {
+          mode: 'no-cors',
+          cache: 'no-cache'
+        })
+        .then(() => {
+          if (!document.getElementById('connectionStatus').classList.contains('online')) {
+            updateConnectionStatus();
+          }
+        })
+        .catch(() => {
+          // False positive, we're still offline
+          const status = document.getElementById('connectionStatus');
+          status.classList.remove('online');
+        });
+      }
+    }, 5000);
+  </script>
+</body>
+</html>

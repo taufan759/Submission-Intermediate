@@ -1,0 +1,12 @@
+# Node modules (jika menggunakan Node.js)
+node_modules/
+
+# Build folder (jika menggunakan bundler seperti Webpack)
+build/
+
+# File sistem yang dihasilkan oleh editor
+.idea/
+.vscode/
+
+# Sistem cache atau file build lainnya
+*.log
