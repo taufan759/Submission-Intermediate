@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-  base: '/submission/', // Ganti dengan nama repository Anda
+  base: '/Submission-Intermediate/',
   
   server: {
     port: 5173,
