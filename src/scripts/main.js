@@ -1,6 +1,8 @@
 // main.js - FINAL FIXED VERSION
 console.log('🚀 Loading PetaBicara App...');
 
+import './styles/main.css';
+
 // STEP 1: Import utilities first (no dependencies)
 console.log('📁 Loading utilities...');
 import './utils/router.js';
