@@ -1,7 +1,8 @@
 // Service Worker Registration & PWA Installation Handler
 class ServiceWorkerRegister {
   constructor() {
-    this.swPath = '/sw.js';
+    // FIXED: Add base path untuk Vite deployment
+    this.swPath = '/Submission-Intermediate/sw.js';
     this.registration = null;
     this.deferredPrompt = null;
     this.isStandalone = window.matchMedia('(display-mode: standalone)').matches;
@@ -38,8 +39,9 @@ class ServiceWorkerRegister {
 
   async register() {
     try {
+      // FIXED: Register dengan scope yang benar
       this.registration = await navigator.serviceWorker.register(this.swPath, {
-        scope: '/'
+        scope: '/Submission-Intermediate/'
       });
 
       console.log('Service Worker registered:', this.registration);
@@ -257,32 +259,122 @@ class ServiceWorkerRegister {
   async promptInstall() {
     if (!this.deferredPrompt) {
       console.log('No deferred prompt available');
+      // ADDED: Manual install instruction for better UX
+      this.showManualInstallInstructions();
       return;
     }
 
-    // Show the install prompt
-    this.deferredPrompt.prompt();
+    try {
+      // Show the install prompt
+      this.deferredPrompt.prompt();
 
-    // Wait for the user to respond
-    const { outcome } = await this.deferredPrompt.userChoice;
-    console.log(`User response to install prompt: ${outcome}`);
+      // Wait for the user to respond
+      const { outcome } = await this.deferredPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
 
-    // Track installation choice
-    if (window.gtag) {
-      window.gtag('event', 'pwa_install_prompt', {
-        'event_category': 'PWA',
-        'event_label': outcome
-      });
+      // Track installation choice
+      if (window.gtag) {
+        window.gtag('event', 'pwa_install_prompt', {
+          'event_category': 'PWA',
+          'event_label': outcome
+        });
+      }
+
+      // Clear the deferred prompt
+      this.deferredPrompt = null;
+
+      // Remove install banner
+      const banner = document.getElementById('installBanner');
+      if (banner) {
+        banner.remove();
+      }
+    } catch (error) {
+      console.error('Error prompting install:', error);
+      this.showManualInstallInstructions();
+    }
+  }
+
+  // ADDED: Manual install instructions
+  showManualInstallInstructions() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    
+    let instructions = '';
+    
+    if (isIOS) {
+      instructions = `
+        <h4>Install di iOS:</h4>
+        <ol>
+          <li>Tap tombol Share <i class="fas fa-share"></i></li>
+          <li>Pilih "Add to Home Screen"</li>
+          <li>Tap "Add"</li>
+        </ol>
+      `;
+    } else if (isAndroid) {
+      instructions = `
+        <h4>Install di Android:</h4>
+        <ol>
+          <li>Tap menu <i class="fas fa-ellipsis-v"></i> di browser</li>
+          <li>Pilih "Add to Home screen" atau "Install app"</li>
+          <li>Tap "Install"</li>
+        </ol>
+      `;
+    } else {
+      instructions = `
+        <h4>Install di Desktop:</h4>
+        <ol>
+          <li>Klik icon install <i class="fas fa-plus"></i> di address bar</li>
+          <li>Atau gunakan menu browser → "Install Peta Bicara"</li>
+          <li>Klik "Install"</li>
+        </ol>
+      `;
     }
 
-    // Clear the deferred prompt
-    this.deferredPrompt = null;
-
-    // Remove install banner
-    const banner = document.getElementById('installBanner');
-    if (banner) {
-      banner.remove();
-    }
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    `;
+    
+    modal.innerHTML = `
+      <div style="
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+      ">
+        <h3 style="margin: 0 0 1rem 0; color: #333;">
+          <i class="fas fa-mobile-alt" style="color: #2196F3;"></i>
+          Install Peta Bicara
+        </h3>
+        ${instructions}
+        <button onclick="this.closest('div').parentElement.remove()" style="
+          background: #2196F3;
+          color: white;
+          border: none;
+          padding: 0.75rem 2rem;
+          border-radius: 8px;
+          cursor: pointer;
+          margin-top: 1rem;
+          font-size: 1rem;
+        ">
+          OK, Mengerti
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
   }
 
   dismissInstallBanner(savePreference = true) {
@@ -314,10 +406,10 @@ class ServiceWorkerRegister {
 
       // Show success notification
       if (window.pushNotificationHelper) {
-        window.pushNotificationHelper.showLocalNotification(
+        window.pushNotificationHelper.showBasicNotification(
           'Peta Bicara Terpasang!',
           'Aplikasi berhasil dipasang. Kamu bisa membukanya dari homescreen.',
-          '/icons/icon-192x192.png'
+          '/Submission-Intermediate/icons/icon-192x192.png'
         );
       }
     });

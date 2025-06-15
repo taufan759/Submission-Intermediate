@@ -1,8 +1,11 @@
-// Push Notification 
+// Push Notification Helper - FIXED VERSION
 class PushNotificationHelper {
   constructor() {
     // VAPID Keys (Public Key) - Replace with your actual VAPID keys
     this.vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa40HI6DLldHta0mnPj1xhwMmpNg4HSHTnlZdHnPfU36tMEKRz72hT2RofJhkQ';
+    
+    // FIXED: Add base path
+    this.basePath = '/Submission-Intermediate';
     
     this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
     this.registration = null;
@@ -169,19 +172,19 @@ class PushNotificationHelper {
     try {
       const defaultOptions = {
         body: body,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
+        icon: `${this.basePath}/icons/icon-192x192.png`,
+        badge: `${this.basePath}/icons/icon-72x72.png`,
         vibrate: [100, 50, 100],
         data: {
           dateOfArrival: Date.now(),
           primaryKey: Math.random(),
-          url: '/'
+          url: `${this.basePath}/`
         },
         actions: [
           {
             action: 'open',
             title: 'Buka App',
-            icon: '/favicon.ico'
+            icon: `${this.basePath}/icons/icon-72x72.png`
           },
           {
             action: 'close',
@@ -205,7 +208,7 @@ class PushNotificationHelper {
   }
   
   // Show basic notification (no actions) - FIXED VERSION
-  showBasicNotification(title, body, icon = '/favicon.ico') {
+  showBasicNotification(title, body, icon = null) {
     if (!this.isSupported) {
       console.warn('Notifications not supported');
       return false;
@@ -217,15 +220,19 @@ class PushNotificationHelper {
     }
     
     try {
+      // Use proper icon path
+      const iconPath = icon || `${this.basePath}/icons/icon-192x192.png`;
+      
       // Basic notification WITHOUT actions (this fixes the error)
       const notification = new Notification(title, {
         body: body,
-        icon: icon,
-        badge: '/favicon.ico',
+        icon: iconPath,
+        badge: `${this.basePath}/icons/icon-72x72.png`,
         vibrate: [100, 50, 100],
         data: {
           dateOfArrival: Date.now(),
-          primaryKey: Math.random()
+          primaryKey: Math.random(),
+          url: `${this.basePath}/`
         },
         silent: false,
         tag: 'peta-bicara-basic'
@@ -238,6 +245,8 @@ class PushNotificationHelper {
         // Navigate to relevant page
         if (window.router) {
           window.router.navigateTo('/');
+        } else {
+          window.location.href = `${this.basePath}/`;
         }
       });
       
@@ -278,7 +287,8 @@ class PushNotificationHelper {
           auth: arrayBufferToBase64(subscription.getKey('auth'))
         },
         timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent
+        userAgent: navigator.userAgent,
+        basePath: this.basePath
       };
       
       console.log('Subscription data:', subscriptionData);
@@ -346,9 +356,17 @@ class PushNotificationHelper {
             p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
             auth: arrayBufferToBase64(subscription.getKey('auth'))
           },
-          subscribedAt: new Date().toISOString()
+          subscribedAt: new Date().toISOString(),
+          basePath: this.basePath
         });
         console.log('Push subscription saved locally');
+      } else {
+        console.warn('IndexedDB helper not available, using localStorage fallback');
+        localStorage.setItem('pwa-push-subscription', JSON.stringify({
+          endpoint: subscription.endpoint,
+          subscribedAt: new Date().toISOString(),
+          basePath: this.basePath
+        }));
       }
     } catch (error) {
       console.error('Error saving subscription locally:', error);
@@ -361,6 +379,8 @@ class PushNotificationHelper {
       if (window.indexedDBHelper) {
         await window.indexedDBHelper.saveSetting('pushSubscription', null);
         console.log('Push subscription removed locally');
+      } else {
+        localStorage.removeItem('pwa-push-subscription');
       }
     } catch (error) {
       console.error('Error removing subscription locally:', error);
@@ -372,14 +392,16 @@ class PushNotificationHelper {
     try {
       const isSubscribed = await this.isSubscribed();
       const localSubscription = window.indexedDBHelper ? 
-        await window.indexedDBHelper.getSetting('pushSubscription') : null;
+        await window.indexedDBHelper.getSetting('pushSubscription') : 
+        JSON.parse(localStorage.getItem('pwa-push-subscription') || 'null');
       
       return {
         isSubscribed,
         hasPermission: Notification.permission === 'granted',
         isSupported: this.isSupported,
         subscription: this.subscription,
-        localSubscription
+        localSubscription,
+        basePath: this.basePath
       };
     } catch (error) {
       console.error('Error getting subscription info:', error);
@@ -388,7 +410,8 @@ class PushNotificationHelper {
         hasPermission: false,
         isSupported: this.isSupported,
         subscription: null,
-        localSubscription: null
+        localSubscription: null,
+        basePath: this.basePath
       };
     }
   }
@@ -427,7 +450,10 @@ class PushNotificationHelper {
           'Ini adalah test notifikasi dari Peta Bicara!\nNotifikasi melalui Service Worker berfungsi dengan baik!',
           {
             tag: 'test-notification',
-            data: { test: true, url: '/' }
+            data: { 
+              test: true, 
+              url: `${this.basePath}/` 
+            }
           }
         );
         
@@ -472,7 +498,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Auto-subscribe if user previously gave permission
     const hasStoredSubscription = window.indexedDBHelper ? 
-      await window.indexedDBHelper.getSetting('pushSubscription') : null;
+      await window.indexedDBHelper.getSetting('pushSubscription') : 
+      JSON.parse(localStorage.getItem('pwa-push-subscription') || 'null');
     
     if (hasStoredSubscription && Notification.permission === 'granted') {
       const isCurrentlySubscribed = await pushNotificationHelper.isSubscribed();

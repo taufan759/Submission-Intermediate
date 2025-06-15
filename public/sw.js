@@ -1,52 +1,67 @@
-// Service Worker untuk Peta Bicara PWA - UPDATED
-const CACHE_NAME = 'peta-bicara-v1.2.0';
-const RUNTIME_CACHE = 'peta-bicara-runtime-v1.2.0';
+// Service Worker untuk Peta Bicara PWA - COMPLETE FIXED VERSION
+const CACHE_NAME = 'peta-bicara-v1.3.0';
+const RUNTIME_CACHE = 'peta-bicara-runtime-v1.3.0';
+
+// Base path untuk deployment
+const BASE_PATH = '/Submission-Intermediate';
 
 // Application Shell - static assets yang akan di-cache
 const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/src/scripts/styles/main.css',
-  '/src/scripts/styles/home.css',
-  '/src/scripts/styles/add-story.css',
-  '/src/scripts/styles/auth.css',
-  '/src/scripts/styles/components.css',
-  '/src/scripts/app.js',
-  '/src/scripts/utils/router.js',
-  '/src/scripts/utils/camera-helper.js',
-  '/src/scripts/utils/indexeddb-helper.js',
-  '/src/scripts/utils/push-notification.js',
-  '/src/scripts/utils/service-worker-register.js',
-  '/src/scripts/utils/favorites-helper.js',
-  '/src/scripts/utils/notification-ui-helper.js',
-  '/src/scripts/api/api-service.js',
-  '/src/scripts/model/story-model.js',
-  '/src/scripts/view/app-view.js',
-  '/src/scripts/view/pages/home-view.js',
-  '/src/scripts/view/pages/add-story-view.js',
-  '/src/scripts/view/pages/login-view.js',
-  '/src/scripts/view/pages/register-view.js',
-  '/src/scripts/view/pages/map-view.js',
-  '/src/scripts/view/pages/favorites-view.js',
-  '/src/scripts/view/pages/settings-view.js',
-  '/src/scripts/view/components/navbar.js',
-  '/src/scripts/view/components/footer.js',
-  '/src/scripts/view/components/story-card.js',
-  '/src/scripts/presenter/app-presenter.js',
-  '/src/scripts/presenter/pages/home-presenter.js',
-  '/src/scripts/presenter/pages/add-story-presenter.js',
-  '/src/scripts/presenter/pages/login-presenter.js',
-  '/src/scripts/presenter/pages/register-presenter.js',
-  '/src/scripts/presenter/pages/map-presenter.js',
-  '/src/scripts/presenter/pages/favorites-presenter.js',
-  '/src/scripts/presenter/pages/settings-presenter.js',
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/src/scripts/styles/main.css`,
+  `${BASE_PATH}/src/scripts/styles/home.css`,
+  `${BASE_PATH}/src/scripts/styles/add-story.css`,
+  `${BASE_PATH}/src/scripts/styles/auth.css`,
+  `${BASE_PATH}/src/scripts/styles/components.css`,
+  `${BASE_PATH}/src/scripts/app.js`,
+  `${BASE_PATH}/src/scripts/utils/router.js`,
+  `${BASE_PATH}/src/scripts/utils/camera-helper.js`,
+  `${BASE_PATH}/src/scripts/utils/indexeddb-helper.js`,
+  `${BASE_PATH}/src/scripts/utils/push-notification.js`,
+  `${BASE_PATH}/src/scripts/utils/service-worker-register.js`,
+  `${BASE_PATH}/src/scripts/utils/favorites-helper.js`,
+  `${BASE_PATH}/src/scripts/utils/notification-ui-helper.js`,
+  `${BASE_PATH}/src/scripts/api/api-service.js`,
+  `${BASE_PATH}/src/scripts/model/story-model.js`,
+  `${BASE_PATH}/src/scripts/view/app-view.js`,
+  `${BASE_PATH}/src/scripts/view/pages/home-view.js`,
+  `${BASE_PATH}/src/scripts/view/pages/add-story-view.js`,
+  `${BASE_PATH}/src/scripts/view/pages/login-view.js`,
+  `${BASE_PATH}/src/scripts/view/pages/register-view.js`,
+  `${BASE_PATH}/src/scripts/view/pages/map-view.js`,
+  `${BASE_PATH}/src/scripts/view/pages/favorites-view.js`,
+  `${BASE_PATH}/src/scripts/view/pages/settings-view.js`,
+  `${BASE_PATH}/src/scripts/view/components/navbar.js`,
+  `${BASE_PATH}/src/scripts/view/components/footer.js`,
+  `${BASE_PATH}/src/scripts/view/components/story-card.js`,
+  `${BASE_PATH}/src/scripts/presenter/app-presenter.js`,
+  `${BASE_PATH}/src/scripts/presenter/pages/home-presenter.js`,
+  `${BASE_PATH}/src/scripts/presenter/pages/add-story-presenter.js`,
+  `${BASE_PATH}/src/scripts/presenter/pages/login-presenter.js`,
+  `${BASE_PATH}/src/scripts/presenter/pages/register-presenter.js`,
+  `${BASE_PATH}/src/scripts/presenter/pages/map-presenter.js`,
+  `${BASE_PATH}/src/scripts/presenter/pages/favorites-presenter.js`,
+  `${BASE_PATH}/src/scripts/presenter/pages/settings-presenter.js`,
+  // External resources
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@700&display=swap',
-  '/offline.html',
-  '/404.html'
+  // Offline pages
+  `${BASE_PATH}/offline.html`,
+  `${BASE_PATH}/404.html`,
+  // Icons
+  `${BASE_PATH}/favicon.ico`,
+  `${BASE_PATH}/icons/icon-72x72.png`,
+  `${BASE_PATH}/icons/icon-96x96.png`,
+  `${BASE_PATH}/icons/icon-128x128.png`,
+  `${BASE_PATH}/icons/icon-144x144.png`,
+  `${BASE_PATH}/icons/icon-152x152.png`,
+  `${BASE_PATH}/icons/icon-192x192.png`,
+  `${BASE_PATH}/icons/icon-384x384.png`,
+  `${BASE_PATH}/icons/icon-512x512.png`
 ];
 
 // API endpoints yang akan di-cache
@@ -63,7 +78,15 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Caching app shell...');
-        return cache.addAll(APP_SHELL);
+        // Cache files satu per satu untuk avoid network errors
+        return Promise.allSettled(
+          APP_SHELL.map(url => 
+            cache.add(url).catch(error => {
+              console.warn(`Failed to cache ${url}:`, error);
+              return null;
+            })
+          )
+        );
       })
       .then(() => {
         console.log('App shell cached successfully');
@@ -96,51 +119,130 @@ self.addEventListener('activate', (event) => {
 // Fetch event - implement caching strategies
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
+  // Skip non-GET requests
   if (request.method !== 'GET') return;
 
+  // Skip chrome-extension requests
+  if (url.protocol === 'chrome-extension:') return;
+
+  // Handle API requests
   if (request.url.includes('/stories')) {
     event.respondWith(networkFirstStrategy(request));
-  } else if (APP_SHELL.includes(request.url)) {
-    event.respondWith(cacheFirstStrategy(request));
-  } else if (isApiCachePattern(request.url)) {
-    event.respondWith(networkFirstStrategy(request));
-  } else {
-    event.respondWith(cacheFirstStrategy(request));
+    return;
   }
+
+  // Handle app shell resources
+  if (isAppShellResource(request.url)) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+
+  // Handle external API patterns
+  if (isApiCachePattern(request.url)) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
+
+  // Handle navigation requests
+  if (request.mode === 'navigate') {
+    event.respondWith(handleNavigationRequest(request));
+    return;
+  }
+
+  // Default to cache first for everything else
+  event.respondWith(cacheFirstStrategy(request));
 });
+
+// Check if URL is app shell resource
+function isAppShellResource(url) {
+  return APP_SHELL.some(shellUrl => {
+    // Normalize URLs for comparison
+    const normalizedUrl = url.replace(/\/$/, '');
+    const normalizedShellUrl = shellUrl.replace(/\/$/, '');
+    return normalizedUrl === normalizedShellUrl || normalizedUrl.endsWith(normalizedShellUrl);
+  });
+}
 
 // Cache First Strategy - untuk static assets
 async function cacheFirstStrategy(request) {
   try {
     const cachedResponse = await caches.match(request);
-    if (cachedResponse) return cachedResponse;
+    if (cachedResponse) {
+      console.log('Cache hit:', request.url);
+      return cachedResponse;
+    }
 
+    console.log('Cache miss, fetching:', request.url);
     const networkResponse = await fetch(request);
+    
     if (networkResponse.status === 200) {
       const cache = await caches.open(RUNTIME_CACHE);
       cache.put(request, networkResponse.clone());
     }
+    
     return networkResponse;
   } catch (error) {
-    if (request.mode === 'navigate') return caches.match('/offline.html');
-    return caches.match(request);
+    console.error('Cache first strategy failed:', error);
+    
+    // Try to return cached version
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) return cachedResponse;
+    
+    // Return offline page for navigation requests
+    if (request.mode === 'navigate') {
+      return caches.match(`${BASE_PATH}/offline.html`);
+    }
+    
+    // Return 404 page for other requests
+    return caches.match(`${BASE_PATH}/404.html`);
   }
 }
 
 // Network First Strategy - untuk dynamic content
 async function networkFirstStrategy(request) {
   try {
+    console.log('Network first for:', request.url);
     const networkResponse = await fetch(request);
+    
     if (networkResponse.status === 200) {
       const cache = await caches.open(RUNTIME_CACHE);
       cache.put(request, networkResponse.clone());
     }
+    
     return networkResponse;
   } catch (error) {
+    console.error('Network first strategy failed:', error);
+    
     const cachedResponse = await caches.match(request);
-    if (cachedResponse) return cachedResponse;
-    return caches.match('/404.html');
+    if (cachedResponse) {
+      console.log('Returning cached response for:', request.url);
+      return cachedResponse;
+    }
+    
+    // Return offline page for failed requests
+    return caches.match(`${BASE_PATH}/404.html`);
+  }
+}
+
+// Handle navigation requests (SPA routing)
+async function handleNavigationRequest(request) {
+  try {
+    console.log('Handling navigation:', request.url);
+    
+    // Try network first for navigation
+    const networkResponse = await fetch(request);
+    return networkResponse;
+  } catch (error) {
+    console.log('Navigation failed, returning app shell');
+    
+    // Return the main app shell (index.html) for SPA routing
+    const cachedApp = await caches.match(`${BASE_PATH}/index.html`);
+    if (cachedApp) return cachedApp;
+    
+    // Fallback to offline page
+    return caches.match(`${BASE_PATH}/offline.html`);
   }
 }
 
@@ -149,24 +251,24 @@ function isApiCachePattern(url) {
   return API_CACHE_PATTERNS.some(pattern => pattern.test(url));
 }
 
-// UPDATED Push notification event handler
+// Push notification event handler
 self.addEventListener('push', (event) => {
   console.log('Push notification received:', event);
   
   let notificationData = {
     title: 'Peta Bicara',
     body: 'Ada cerita baru di Peta Bicara!',
-    icon: '/favicon.ico',
-    badge: '/favicon.ico',
+    icon: `${BASE_PATH}/icons/icon-192x192.png`,
+    badge: `${BASE_PATH}/icons/icon-72x72.png`,
     data: {
-      url: '/',
+      url: `${BASE_PATH}/`,
       timestamp: Date.now()
     },
     actions: [
       { 
         action: 'open', 
         title: 'Buka App',
-        icon: '/favicon.ico'
+        icon: `${BASE_PATH}/icons/icon-72x72.png`
       },
       { 
         action: 'close', 
@@ -175,7 +277,8 @@ self.addEventListener('push', (event) => {
     ],
     requireInteraction: false,
     silent: false,
-    tag: 'peta-bicara-push'
+    tag: 'peta-bicara-push',
+    vibrate: [100, 50, 100]
   };
 
   // Parse push data if available
@@ -184,8 +287,8 @@ self.addEventListener('push', (event) => {
       const data = event.data.json();
       notificationData.title = data.title || notificationData.title;
       notificationData.body = data.body || notificationData.body;
-      if (data.icon) notificationData.icon = data.icon;
-      if (data.url) notificationData.data.url = data.url;
+      if (data.icon) notificationData.icon = `${BASE_PATH}${data.icon}`;
+      if (data.url) notificationData.data.url = `${BASE_PATH}${data.url}`;
     } catch (error) {
       console.error('Error parsing push data:', error);
       notificationData.body = event.data.text() || notificationData.body;
@@ -201,7 +304,8 @@ self.addEventListener('push', (event) => {
       actions: notificationData.actions,
       requireInteraction: notificationData.requireInteraction,
       silent: notificationData.silent,
-      tag: notificationData.tag
+      tag: notificationData.tag,
+      vibrate: notificationData.vibrate
     }).then(() => {
       console.log('Push notification displayed successfully');
     }).catch((error) => {
@@ -210,7 +314,7 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// UPDATED Notification click event handler
+// Notification click event handler
 self.addEventListener('notificationclick', (event) => {
   console.log('Notification clicked:', event);
   
@@ -218,10 +322,9 @@ self.addEventListener('notificationclick', (event) => {
   
   const action = event.action;
   const notificationData = event.notification.data || {};
-  const targetUrl = notificationData.url || '/';
+  const targetUrl = notificationData.url || `${BASE_PATH}/`;
   
   if (action === 'close') {
-    // User clicked close, just close the notification
     console.log('User chose to close notification');
     return;
   }
@@ -236,12 +339,13 @@ self.addEventListener('notificationclick', (event) => {
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
         const clientUrl = new URL(client.url);
-        const currentUrl = new URL(self.location.origin);
+        const baseUrl = new URL(self.location.origin + BASE_PATH);
         
-        if (clientUrl.origin === currentUrl.origin && 'focus' in client) {
+        if (clientUrl.pathname.startsWith(baseUrl.pathname) && 'focus' in client) {
           console.log('Focusing existing window');
+          
           // Navigate to target URL if different
-          if (targetUrl !== '/') {
+          if (targetUrl !== `${BASE_PATH}/`) {
             client.postMessage({
               type: 'NAVIGATE',
               url: targetUrl
@@ -252,9 +356,9 @@ self.addEventListener('notificationclick', (event) => {
       }
       
       // No existing window found, open a new one
-      console.log('Opening new window:', self.location.origin + targetUrl);
+      console.log('Opening new window:', targetUrl);
       if (clients.openWindow) {
-        return clients.openWindow(self.location.origin + targetUrl);
+        return clients.openWindow(targetUrl);
       }
     }).catch((error) => {
       console.error('Error handling notification click:', error);
@@ -310,7 +414,7 @@ async function syncOfflineStories() {
           // Show notification about successful sync
           self.registration.showNotification('Cerita Tersinkronisasi', {
             body: 'Cerita offline Anda berhasil diunggah!',
-            icon: '/favicon.ico',
+            icon: `${BASE_PATH}/icons/icon-192x192.png`,
             tag: 'sync-success'
           });
         }
