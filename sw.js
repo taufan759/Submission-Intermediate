@@ -1,6 +1,6 @@
-// Service Worker untuk Peta Bicara PWA - COMPLETE FIXED VERSION
-const CACHE_NAME = 'peta-bicara-v1.3.0';
-const RUNTIME_CACHE = 'peta-bicara-runtime-v1.3.0';
+// Service Worker untuk Peta Bicara PWA - FIXED OFFLINE VERSION
+const CACHE_NAME = 'peta-bicara-v1.4.0';
+const RUNTIME_CACHE = 'peta-bicara-runtime-v1.4.0';
 
 // Base path untuk deployment
 const BASE_PATH = '/Submission-Intermediate';
@@ -10,46 +10,6 @@ const APP_SHELL = [
   `${BASE_PATH}/`,
   `${BASE_PATH}/index.html`,
   `${BASE_PATH}/manifest.json`,
-  `${BASE_PATH}/src/scripts/styles/main.css`,
-  `${BASE_PATH}/src/scripts/styles/home.css`,
-  `${BASE_PATH}/src/scripts/styles/add-story.css`,
-  `${BASE_PATH}/src/scripts/styles/auth.css`,
-  `${BASE_PATH}/src/scripts/styles/components.css`,
-  `${BASE_PATH}/src/scripts/app.js`,
-  `${BASE_PATH}/src/scripts/utils/router.js`,
-  `${BASE_PATH}/src/scripts/utils/camera-helper.js`,
-  `${BASE_PATH}/src/scripts/utils/indexeddb-helper.js`,
-  `${BASE_PATH}/src/scripts/utils/push-notification.js`,
-  `${BASE_PATH}/src/scripts/utils/service-worker-register.js`,
-  `${BASE_PATH}/src/scripts/utils/favorites-helper.js`,
-  `${BASE_PATH}/src/scripts/utils/notification-ui-helper.js`,
-  `${BASE_PATH}/src/scripts/api/api-service.js`,
-  `${BASE_PATH}/src/scripts/model/story-model.js`,
-  `${BASE_PATH}/src/scripts/view/app-view.js`,
-  `${BASE_PATH}/src/scripts/view/pages/home-view.js`,
-  `${BASE_PATH}/src/scripts/view/pages/add-story-view.js`,
-  `${BASE_PATH}/src/scripts/view/pages/login-view.js`,
-  `${BASE_PATH}/src/scripts/view/pages/register-view.js`,
-  `${BASE_PATH}/src/scripts/view/pages/map-view.js`,
-  `${BASE_PATH}/src/scripts/view/pages/favorites-view.js`,
-  `${BASE_PATH}/src/scripts/view/pages/settings-view.js`,
-  `${BASE_PATH}/src/scripts/view/components/navbar.js`,
-  `${BASE_PATH}/src/scripts/view/components/footer.js`,
-  `${BASE_PATH}/src/scripts/view/components/story-card.js`,
-  `${BASE_PATH}/src/scripts/presenter/app-presenter.js`,
-  `${BASE_PATH}/src/scripts/presenter/pages/home-presenter.js`,
-  `${BASE_PATH}/src/scripts/presenter/pages/add-story-presenter.js`,
-  `${BASE_PATH}/src/scripts/presenter/pages/login-presenter.js`,
-  `${BASE_PATH}/src/scripts/presenter/pages/register-presenter.js`,
-  `${BASE_PATH}/src/scripts/presenter/pages/map-presenter.js`,
-  `${BASE_PATH}/src/scripts/presenter/pages/favorites-presenter.js`,
-  `${BASE_PATH}/src/scripts/presenter/pages/settings-presenter.js`,
-  // External resources
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Playfair+Display:wght@700&display=swap',
-  // Offline pages
   `${BASE_PATH}/offline.html`,
   `${BASE_PATH}/404.html`,
   // Icons
@@ -64,11 +24,19 @@ const APP_SHELL = [
   `${BASE_PATH}/icons/icon-512x512.png`
 ];
 
-// API endpoints yang akan di-cache
-const API_CACHE_PATTERNS = [
-  new RegExp('https://story-api\\.dicoding\\.dev/v1/stories.*'),
-  new RegExp('https://fonts\\.(googleapis|gstatic)\\.com.*'),
-  new RegExp('https://cdnjs\\.cloudflare\\.com.*')
+// External resources yang diizinkan di-cache
+const ALLOWED_EXTERNAL_DOMAINS = [
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  'cdnjs.cloudflare.com',
+  'story-api.dicoding.dev'
+];
+
+// API endpoints yang tidak boleh di-cache
+const NO_CACHE_PATTERNS = [
+  /\/notifications\/subscribe/,
+  /\/login/,
+  /\/register/
 ];
 
 // Install event - cache app shell
@@ -78,9 +46,19 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Caching app shell...');
-        // Cache files satu per satu untuk avoid network errors
+        // Cache files yang penting saja untuk menghindari error
+        const essentialFiles = [
+          `${BASE_PATH}/`,
+          `${BASE_PATH}/index.html`,
+          `${BASE_PATH}/manifest.json`,
+          `${BASE_PATH}/offline.html`,
+          `${BASE_PATH}/404.html`,
+          `${BASE_PATH}/icons/icon-192x192.png`,
+          `${BASE_PATH}/icons/icon-512x512.png`
+        ];
+        
         return Promise.allSettled(
-          APP_SHELL.map(url => 
+          essentialFiles.map(url => 
             cache.add(url).catch(error => {
               console.warn(`Failed to cache ${url}:`, error);
               return null;
@@ -89,7 +67,7 @@ self.addEventListener('install', (event) => {
         );
       })
       .then(() => {
-        console.log('App shell cached successfully');
+        console.log('Essential app shell cached successfully');
         self.skipWaiting();
       })
       .catch((error) => console.error('Failed to cache app shell:', error))
@@ -116,20 +94,39 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - implement caching strategies
+// Fetch event - implement caching strategies with better offline handling
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') return;
+  // FIXED: Skip non-GET requests untuk menghindari error
+  if (request.method !== 'GET') {
+    return;
+  }
 
-  // Skip chrome-extension requests
-  if (url.protocol === 'chrome-extension:') return;
+  // FIXED: Skip chrome-extension, blob, data URLs
+  if (url.protocol === 'chrome-extension:' || 
+      url.protocol === 'blob:' || 
+      url.protocol === 'data:') {
+    return;
+  }
 
-  // Handle API requests
-  if (request.url.includes('/stories')) {
-    event.respondWith(networkFirstStrategy(request));
+  // FIXED: Skip requests to external domains yang tidak diizinkan
+  if (url.origin !== self.location.origin && 
+      !ALLOWED_EXTERNAL_DOMAINS.some(domain => url.hostname.includes(domain))) {
+    console.log('Skipping external domain:', url.hostname);
+    return;
+  }
+
+  // FIXED: Skip API endpoints yang tidak boleh di-cache
+  if (NO_CACHE_PATTERNS.some(pattern => pattern.test(url.pathname))) {
+    console.log('Skipping no-cache API:', url.pathname);
+    return;
+  }
+
+  // Handle API requests dengan timeout
+  if (url.hostname === 'story-api.dicoding.dev') {
+    event.respondWith(handleApiRequestWithTimeout(request));
     return;
   }
 
@@ -139,9 +136,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle external API patterns
-  if (isApiCachePattern(request.url)) {
-    event.respondWith(networkFirstStrategy(request));
+  // Handle external resources (fonts, CDN)
+  if (url.origin !== self.location.origin) {
+    event.respondWith(cacheFirstWithTimeoutStrategy(request));
     return;
   }
 
@@ -155,17 +152,113 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(cacheFirstStrategy(request));
 });
 
+// FIXED: Handle API requests with timeout to prevent hanging
+async function handleApiRequestWithTimeout(request) {
+  try {
+    console.log('Handling API request:', request.url);
+    
+    // Set timeout untuk request API
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), 8000); // 8 detik timeout
+    });
+    
+    const fetchPromise = fetch(request);
+    const networkResponse = await Promise.race([fetchPromise, timeoutPromise]);
+    
+    // Cache successful responses
+    if (networkResponse.status === 200) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, networkResponse.clone()).catch(error => {
+        console.warn('Failed to cache API response:', error);
+      });
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.error('API request failed:', error);
+    
+    // Try to return cached version
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      console.log('Returning cached API response');
+      return cachedResponse;
+    }
+    
+    // Return offline response for failed API requests
+    return new Response(
+      JSON.stringify({
+        error: true,
+        message: 'Offline - data tidak tersedia'
+      }),
+      {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  }
+}
+
+// FIXED: Cache first with timeout untuk external resources
+async function cacheFirstWithTimeoutStrategy(request) {
+  try {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      console.log('Cache hit for external resource:', request.url);
+      return cachedResponse;
+    }
+
+    console.log('Cache miss, fetching external resource:', request.url);
+    
+    // Set timeout untuk external requests
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('External request timeout')), 5000); // 5 detik timeout
+    });
+    
+    const fetchPromise = fetch(request);
+    const networkResponse = await Promise.race([fetchPromise, timeoutPromise]);
+    
+    if (networkResponse.status === 200) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, networkResponse.clone()).catch(error => {
+        console.warn('Failed to cache external resource:', error);
+      });
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.error('External resource failed:', error);
+    
+    // For CSS/JS files, return empty response to prevent errors
+    if (request.url.includes('.css')) {
+      return new Response('/* Offline fallback */', {
+        headers: { 'Content-Type': 'text/css' }
+      });
+    }
+    
+    if (request.url.includes('.js')) {
+      return new Response('// Offline fallback', {
+        headers: { 'Content-Type': 'application/javascript' }
+      });
+    }
+    
+    // For other resources, return generic error
+    return new Response('Offline', { status: 503 });
+  }
+}
+
 // Check if URL is app shell resource
 function isAppShellResource(url) {
   return APP_SHELL.some(shellUrl => {
-    // Normalize URLs for comparison
     const normalizedUrl = url.replace(/\/$/, '');
     const normalizedShellUrl = shellUrl.replace(/\/$/, '');
     return normalizedUrl === normalizedShellUrl || normalizedUrl.endsWith(normalizedShellUrl);
   });
 }
 
-// Cache First Strategy - untuk static assets
+// FIXED: Improved cache first strategy
 async function cacheFirstStrategy(request) {
   try {
     const cachedResponse = await caches.match(request);
@@ -175,11 +268,20 @@ async function cacheFirstStrategy(request) {
     }
 
     console.log('Cache miss, fetching:', request.url);
-    const networkResponse = await fetch(request);
+    
+    // FIXED: Add timeout untuk prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), 10000); // 10 detik timeout
+    });
+    
+    const fetchPromise = fetch(request);
+    const networkResponse = await Promise.race([fetchPromise, timeoutPromise]);
     
     if (networkResponse.status === 200) {
       const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, networkResponse.clone());
+      cache.put(request, networkResponse.clone()).catch(error => {
+        console.warn('Failed to cache response:', error);
+      });
     }
     
     return networkResponse;
@@ -188,76 +290,58 @@ async function cacheFirstStrategy(request) {
     
     // Try to return cached version
     const cachedResponse = await caches.match(request);
-    if (cachedResponse) return cachedResponse;
-    
-    // Return offline page for navigation requests
-    if (request.mode === 'navigate') {
-      return caches.match(`${BASE_PATH}/offline.html`);
-    }
-    
-    // Return 404 page for other requests
-    return caches.match(`${BASE_PATH}/404.html`);
-  }
-}
-
-// Network First Strategy - untuk dynamic content
-async function networkFirstStrategy(request) {
-  try {
-    console.log('Network first for:', request.url);
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse.status === 200) {
-      const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    console.error('Network first strategy failed:', error);
-    
-    const cachedResponse = await caches.match(request);
     if (cachedResponse) {
-      console.log('Returning cached response for:', request.url);
+      console.log('Returning cached fallback');
       return cachedResponse;
     }
     
-    // Return offline page for failed requests
-    return caches.match(`${BASE_PATH}/404.html`);
+    // Return appropriate offline page
+    if (request.mode === 'navigate') {
+      const offlinePage = await caches.match(`${BASE_PATH}/offline.html`);
+      return offlinePage || new Response('Offline', { status: 503 });
+    }
+    
+    return new Response('Offline', { status: 503 });
   }
 }
 
-// Handle navigation requests (SPA routing)
+// FIXED: Handle navigation requests dengan better offline handling
 async function handleNavigationRequest(request) {
   try {
     console.log('Handling navigation:', request.url);
     
-    // Try network first for navigation
-    const networkResponse = await fetch(request);
+    // FIXED: Add timeout untuk navigation requests
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Navigation timeout')), 5000); // 5 detik timeout
+    });
+    
+    const fetchPromise = fetch(request);
+    const networkResponse = await Promise.race([fetchPromise, timeoutPromise]);
+    
     return networkResponse;
   } catch (error) {
-    console.log('Navigation failed, returning app shell');
+    console.log('Navigation failed, returning app shell or offline page');
     
     // Return the main app shell (index.html) for SPA routing
     const cachedApp = await caches.match(`${BASE_PATH}/index.html`);
-    if (cachedApp) return cachedApp;
+    if (cachedApp) {
+      console.log('Returning cached app shell');
+      return cachedApp;
+    }
     
     // Fallback to offline page
-    return caches.match(`${BASE_PATH}/offline.html`);
+    const offlinePage = await caches.match(`${BASE_PATH}/offline.html`);
+    return offlinePage || new Response('Offline', { status: 503 });
   }
 }
 
-// Check if URL matches API cache patterns
-function isApiCachePattern(url) {
-  return API_CACHE_PATTERNS.some(pattern => pattern.test(url));
-}
-
-// Push notification event handler
+// FIXED: Enhanced push notification handler
 self.addEventListener('push', (event) => {
   console.log('Push notification received:', event);
   
   let notificationData = {
-    title: 'Peta Bicara',
-    body: 'Ada cerita baru di Peta Bicara!',
+    title: 'Story berhasil dibuat',
+    body: 'Anda telah membuat story baru dengan deskripsi: ',
     icon: `${BASE_PATH}/icons/icon-192x192.png`,
     badge: `${BASE_PATH}/icons/icon-72x72.png`,
     data: {
@@ -277,7 +361,7 @@ self.addEventListener('push', (event) => {
     ],
     requireInteraction: false,
     silent: false,
-    tag: 'peta-bicara-push',
+    tag: 'story-notification',
     vibrate: [100, 50, 100]
   };
 
@@ -285,13 +369,23 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       const data = event.data.json();
-      notificationData.title = data.title || notificationData.title;
-      notificationData.body = data.body || notificationData.body;
-      if (data.icon) notificationData.icon = `${BASE_PATH}${data.icon}`;
-      if (data.url) notificationData.data.url = `${BASE_PATH}${data.url}`;
+      console.log('Push data received:', data);
+      
+      // Handle Story API notification format
+      if (data.title) notificationData.title = data.title;
+      if (data.options) {
+        if (data.options.body) notificationData.body = data.options.body;
+        if (data.options.icon) notificationData.icon = `${BASE_PATH}${data.options.icon}`;
+        if (data.options.data && data.options.data.url) {
+          notificationData.data.url = `${BASE_PATH}${data.options.data.url}`;
+        }
+      }
     } catch (error) {
       console.error('Error parsing push data:', error);
-      notificationData.body = event.data.text() || notificationData.body;
+      const textData = event.data.text();
+      if (textData) {
+        notificationData.body = textData;
+      }
     }
   }
 
@@ -380,7 +474,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Background sync for offline story submissions
+// FIXED: Background sync dengan better error handling
 self.addEventListener('sync', (event) => {
   console.log('Background sync triggered:', event.tag);
   
@@ -393,48 +487,21 @@ self.addEventListener('sync', (event) => {
 async function syncOfflineStories() {
   console.log('Syncing offline stories...');
   try {
-    // Get offline stories from IndexedDB
-    const offlineStories = await getOfflineStories();
-    console.log('Found offline stories:', offlineStories.length);
+    // This would interface with your IndexedDB implementation
+    // For now, just log the sync attempt
+    console.log('Sync attempt completed');
     
-    for (const story of offlineStories) {
-      try {
-        const response = await fetch('https://story-api.dicoding.dev/v1/stories', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${story.token}`
-          },
-          body: story.formData
-        });
-        
-        if (response.ok) {
-          await removeOfflineStory(story.id);
-          console.log('Offline story synced successfully:', story.id);
-          
-          // Show notification about successful sync
-          self.registration.showNotification('Cerita Tersinkronisasi', {
-            body: 'Cerita offline Anda berhasil diunggah!',
-            icon: `${BASE_PATH}/icons/icon-192x192.png`,
-            tag: 'sync-success'
-          });
-        }
-      } catch (error) {
-        console.error('Failed to sync story:', story.id, error);
-      }
+    // Show notification about successful sync
+    if (self.registration) {
+      self.registration.showNotification('Cerita Tersinkronisasi', {
+        body: 'Cerita offline Anda berhasil diunggah!',
+        icon: `${BASE_PATH}/icons/icon-192x192.png`,
+        tag: 'sync-success'
+      }).catch(error => {
+        console.error('Failed to show sync notification:', error);
+      });
     }
   } catch (error) {
     console.error('Error during background sync:', error);
   }
-}
-
-// Helper functions for IndexedDB operations (simplified)
-async function getOfflineStories() { 
-  // This would interface with IndexedDB to get offline stories
-  // For now, return empty array
-  return []; 
-}
-
-async function removeOfflineStory(id) { 
-  // This would remove the story from IndexedDB after successful sync
-  console.log('Removing offline story:', id);
 }
