@@ -559,7 +559,7 @@ class NotificationUIHelper {
     }
   }
 
-  // Update status notifikasi
+  // FIXED: Update status notifikasi with Story API check
   async updateNotificationStatus() {
     console.log('NotificationUIHelper: Updating status');
     
@@ -587,6 +587,14 @@ class NotificationUIHelper {
         return;
       }
 
+      // Check authentication for Story API
+      const token = localStorage.getItem('token');
+      if (!token) {
+        this.updateStatusText('Login diperlukan untuk notifikasi', 'warning');
+        if (toggle) toggle.disabled = true;
+        return;
+      }
+
       // Check permission
       const permission = Notification.permission;
       console.log('NotificationUIHelper: Permission status:', permission);
@@ -610,11 +618,16 @@ class NotificationUIHelper {
         const info = await this.pushHelper.getSubscriptionInfo();
         console.log('NotificationUIHelper: Subscription info:', info);
         
-        if (info.isSubscribed) {
-          this.updateStatusText('Push notifikasi aktif dan siap', 'success');
+        // FIXED: Check both local and Story API subscription
+        if (info.isSubscribed && info.isSubscribedToStoryAPI) {
+          this.updateStatusText('Notifikasi Story API aktif', 'success');
           if (toggle) toggle.checked = true;
           if (testBtn) testBtn.style.display = 'inline-flex';
           if (notificationInfo) notificationInfo.style.display = 'block';
+        } else if (info.isSubscribed) {
+          this.updateStatusText('Notifikasi lokal aktif, Story API belum terdaftar', 'warning');
+          if (toggle) toggle.checked = false;
+          if (testBtn) testBtn.style.display = 'inline-flex';
         } else {
           this.updateStatusText('Push notifikasi tidak aktif', 'warning');
           if (toggle) toggle.checked = false;

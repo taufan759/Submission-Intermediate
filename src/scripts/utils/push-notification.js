@@ -1,12 +1,13 @@
-// Push Notification Helper - FIXED VERSION
+// Push Notification Helper - FIXED WITH STORY API INTEGRATION
 class PushNotificationHelper {
   constructor() {
-    // VAPID Keys (Public Key) - Replace with your actual VAPID keys
-    this.vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa40HI6DLldHta0mnPj1xhwMmpNg4HSHTnlZdHnPfU36tMEKRz72hT2RofJhkQ';
+    // FIXED: VAPID Keys dari Dicoding Story API
+    this.vapidPublicKey = 'BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk';
     
-    // FIXED: Add base path
+    // FIXED: Story API Base URL
+    this.apiBaseUrl = 'https://story-api.dicoding.dev/v1';
+    
     this.basePath = '/Submission-Intermediate';
-    
     this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
     this.registration = null;
     this.subscription = null;
@@ -31,8 +32,8 @@ class PushNotificationHelper {
       
       if (this.subscription) {
         console.log('Existing push subscription found');
-        // Send subscription to server if needed
-        await this.sendSubscriptionToServer(this.subscription);
+        // Send subscription to Story API
+        await this.sendSubscriptionToStoryAPI(this.subscription);
       }
       
       return true;
@@ -48,11 +49,9 @@ class PushNotificationHelper {
       throw new Error('Push notifications are not supported');
     }
     
-    // Check current permission status
     let permission = Notification.permission;
     
     if (permission === 'default') {
-      // Request permission
       permission = await Notification.requestPermission();
     }
     
@@ -93,16 +92,16 @@ class PushNotificationHelper {
       
       console.log('Push subscription successful:', this.subscription);
       
-      // Send subscription to server
-      await this.sendSubscriptionToServer(this.subscription);
+      // FIXED: Send subscription to Story API
+      await this.sendSubscriptionToStoryAPI(this.subscription);
       
       // Save subscription locally
       await this.saveSubscriptionLocally(this.subscription);
       
-      // Show success notification via Service Worker (supports actions)
+      // Show success notification
       await this.showServiceWorkerNotification(
         'Notifikasi Aktif!',
-        'Kamu akan mendapat notifikasi untuk cerita baru dan update terbaru.'
+        'Kamu akan mendapat notifikasi untuk cerita baru.'
       );
       
       return this.subscription;
@@ -116,26 +115,24 @@ class PushNotificationHelper {
   async unsubscribe() {
     try {
       if (!this.subscription) {
-        // Try to get existing subscription
         if (this.registration) {
           this.subscription = await this.registration.pushManager.getSubscription();
         }
       }
       
       if (this.subscription) {
+        // FIXED: Remove from Story API first
+        await this.removeSubscriptionFromStoryAPI(this.subscription);
+        
         const success = await this.subscription.unsubscribe();
         
         if (success) {
           console.log('Push notification unsubscribed successfully');
           
-          // Remove from server
-          await this.removeSubscriptionFromServer(this.subscription);
-          
           // Remove from local storage
           await this.removeSubscriptionLocally();
           
           this.subscription = null;
-          
           return true;
         }
       }
@@ -147,18 +144,91 @@ class PushNotificationHelper {
     }
   }
   
-  // Check if user is subscribed
-  async isSubscribed() {
+  // FIXED: Send subscription to Story API
+  async sendSubscriptionToStoryAPI(subscription) {
     try {
-      if (!this.registration) {
-        await this.init();
+      console.log('Sending subscription to Story API...');
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
       
-      this.subscription = await this.registration.pushManager.getSubscription();
-      return !!this.subscription;
+      const subscriptionData = {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: this.arrayBufferToBase64(subscription.getKey('p256dh')),
+          auth: this.arrayBufferToBase64(subscription.getKey('auth'))
+        }
+      };
+      
+      console.log('Subscription data to send:', subscriptionData);
+      
+      const response = await fetch(`${this.apiBaseUrl}/notifications/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(subscriptionData)
+      });
+      
+      const responseJson = await response.json();
+      console.log('Story API subscription response:', responseJson);
+      
+      if (responseJson.error) {
+        throw new Error(responseJson.message || 'Failed to subscribe to Story API');
+      }
+      
+      // Save the subscription ID for later use
+      if (responseJson.data && responseJson.data.id) {
+        localStorage.setItem('story-api-subscription-id', responseJson.data.id);
+      }
+      
+      return responseJson;
     } catch (error) {
-      console.error('Error checking subscription status:', error);
-      return false;
+      console.error('Error sending subscription to Story API:', error);
+      // Don't throw error - local subscription still works
+      throw error;
+    }
+  }
+  
+  // FIXED: Remove subscription from Story API
+  async removeSubscriptionFromStoryAPI(subscription) {
+    try {
+      console.log('Removing subscription from Story API...');
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No authentication token found for unsubscribe');
+        return;
+      }
+      
+      const subscriptionData = {
+        endpoint: subscription.endpoint
+      };
+      
+      const response = await fetch(`${this.apiBaseUrl}/notifications/subscribe`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(subscriptionData)
+      });
+      
+      const responseJson = await response.json();
+      console.log('Story API unsubscribe response:', responseJson);
+      
+      if (responseJson.error) {
+        console.warn('Failed to unsubscribe from Story API:', responseJson.message);
+      } else {
+        // Remove the stored subscription ID
+        localStorage.removeItem('story-api-subscription-id');
+      }
+      
+    } catch (error) {
+      console.error('Error removing subscription from Story API:', error);
     }
   }
   
@@ -207,7 +277,7 @@ class PushNotificationHelper {
     }
   }
   
-  // Show basic notification (no actions) - FIXED VERSION
+  // Show basic notification (no actions)
   showBasicNotification(title, body, icon = null) {
     if (!this.isSupported) {
       console.warn('Notifications not supported');
@@ -220,10 +290,8 @@ class PushNotificationHelper {
     }
     
     try {
-      // Use proper icon path
       const iconPath = icon || `${this.basePath}/icons/icon-192x192.png`;
       
-      // Basic notification WITHOUT actions (this fixes the error)
       const notification = new Notification(title, {
         body: body,
         icon: iconPath,
@@ -236,13 +304,11 @@ class PushNotificationHelper {
         },
         silent: false,
         tag: 'peta-bicara-basic'
-        // NO ACTIONS HERE - this was causing the error
       });
       
       notification.addEventListener('click', () => {
         window.focus();
         notification.close();
-        // Navigate to relevant page
         if (window.router) {
           window.router.navigateTo('/');
         } else {
@@ -254,7 +320,6 @@ class PushNotificationHelper {
         console.error('Notification error:', e);
       });
       
-      // Auto close after 8 seconds
       setTimeout(() => {
         notification.close();
       }, 8000);
@@ -267,82 +332,17 @@ class PushNotificationHelper {
     }
   }
   
-  // Alias for backward compatibility
-  showLocalNotification(title, body, icon) {
-    return this.showBasicNotification(title, body, icon);
-  }
-  
-  // Send subscription to server (you'll need to implement server-side)
-  async sendSubscriptionToServer(subscription) {
+  // Check if user is subscribed to Story API
+  async isSubscribedToStoryAPI() {
     try {
-      console.log('Sending subscription to server...');
+      const token = localStorage.getItem('token');
+      if (!token) return false;
       
-      // This is where you would send the subscription to your backend
-      // For now, we'll just log it and save locally
-      
-      const subscriptionData = {
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
-          auth: arrayBufferToBase64(subscription.getKey('auth'))
-        },
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        basePath: this.basePath
-      };
-      
-      console.log('Subscription data:', subscriptionData);
-      
-      // Here you would typically POST to your server:
-      /*
-      const response = await fetch('/api/push-subscriptions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(subscriptionData)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save subscription on server');
-      }
-      */
-      
-      return subscriptionData;
+      const subscriptionId = localStorage.getItem('story-api-subscription-id');
+      return !!subscriptionId;
     } catch (error) {
-      console.error('Error sending subscription to server:', error);
-      // Don't throw error - local subscription still works for testing
-    }
-  }
-  
-  // Remove subscription from server
-  async removeSubscriptionFromServer(subscription) {
-    try {
-      console.log('Removing subscription from server...');
-      
-      // This is where you would remove the subscription from your backend
-      const subscriptionData = {
-        endpoint: subscription.endpoint,
-        timestamp: new Date().toISOString()
-      };
-      
-      console.log('Removing subscription:', subscriptionData);
-      
-      // Here you would typically DELETE from your server:
-      /*
-      const response = await fetch('/api/push-subscriptions', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(subscriptionData)
-      });
-      */
-      
-    } catch (error) {
-      console.error('Error removing subscription from server:', error);
+      console.error('Error checking Story API subscription:', error);
+      return false;
     }
   }
   
@@ -353,11 +353,12 @@ class PushNotificationHelper {
         await window.indexedDBHelper.saveSetting('pushSubscription', {
           endpoint: subscription.endpoint,
           keys: {
-            p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
-            auth: arrayBufferToBase64(subscription.getKey('auth'))
+            p256dh: this.arrayBufferToBase64(subscription.getKey('p256dh')),
+            auth: this.arrayBufferToBase64(subscription.getKey('auth'))
           },
           subscribedAt: new Date().toISOString(),
-          basePath: this.basePath
+          basePath: this.basePath,
+          storyApiSubscriptionId: localStorage.getItem('story-api-subscription-id')
         });
         console.log('Push subscription saved locally');
       } else {
@@ -382,6 +383,7 @@ class PushNotificationHelper {
       } else {
         localStorage.removeItem('pwa-push-subscription');
       }
+      localStorage.removeItem('story-api-subscription-id');
     } catch (error) {
       console.error('Error removing subscription locally:', error);
     }
@@ -391,28 +393,47 @@ class PushNotificationHelper {
   async getSubscriptionInfo() {
     try {
       const isSubscribed = await this.isSubscribed();
+      const isSubscribedToStoryAPI = await this.isSubscribedToStoryAPI();
       const localSubscription = window.indexedDBHelper ? 
         await window.indexedDBHelper.getSetting('pushSubscription') : 
         JSON.parse(localStorage.getItem('pwa-push-subscription') || 'null');
       
       return {
         isSubscribed,
+        isSubscribedToStoryAPI,
         hasPermission: Notification.permission === 'granted',
         isSupported: this.isSupported,
         subscription: this.subscription,
         localSubscription,
-        basePath: this.basePath
+        basePath: this.basePath,
+        storyApiSubscriptionId: localStorage.getItem('story-api-subscription-id')
       };
     } catch (error) {
       console.error('Error getting subscription info:', error);
       return {
         isSubscribed: false,
+        isSubscribedToStoryAPI: false,
         hasPermission: false,
         isSupported: this.isSupported,
         subscription: null,
         localSubscription: null,
         basePath: this.basePath
       };
+    }
+  }
+  
+  // Check if user is subscribed
+  async isSubscribed() {
+    try {
+      if (!this.registration) {
+        await this.init();
+      }
+      
+      this.subscription = await this.registration.pushManager.getSubscription();
+      return !!this.subscription;
+    } catch (error) {
+      console.error('Error checking subscription status:', error);
+      return false;
     }
   }
   
@@ -433,7 +454,15 @@ class PushNotificationHelper {
     return outputArray;
   }
   
-  // Test push notification - FIXED VERSION
+  // Helper function to convert ArrayBuffer to Base64
+  arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    bytes.forEach(byte => binary += String.fromCharCode(byte));
+    return window.btoa(binary);
+  }
+  
+  // Test push notification
   async testNotification() {
     try {
       console.log('Testing notification...');
@@ -442,12 +471,12 @@ class PushNotificationHelper {
         throw new Error('Izin notifikasi belum diberikan');
       }
       
-      // Try Service Worker notification first (with actions)
+      // Try Service Worker notification first
       if (this.registration) {
         console.log('Showing test notification via Service Worker...');
         const swSuccess = await this.showServiceWorkerNotification(
           '🧪 Test Notifikasi',
-          'Ini adalah test notifikasi dari Peta Bicara!\nNotifikasi melalui Service Worker berfungsi dengan baik!',
+          'Ini adalah test notifikasi dari Peta Bicara! Notifikasi melalui Service Worker berfungsi dengan baik!',
           {
             tag: 'test-notification',
             data: { 
@@ -462,11 +491,11 @@ class PushNotificationHelper {
         }
       }
       
-      // Fallback to basic notification (no actions)
+      // Fallback to basic notification
       console.log('Showing test notification via basic notification...');
       const basicSuccess = this.showBasicNotification(
         '🧪 Test Notifikasi', 
-        'Ini adalah test notifikasi dari Peta Bicara!\nNotifikasi dasar berfungsi dengan baik!'
+        'Ini adalah test notifikasi dari Peta Bicara! Notifikasi dasar berfungsi dengan baik!'
       );
       
       return basicSuccess;
@@ -478,20 +507,12 @@ class PushNotificationHelper {
   }
 }
 
-// Helper function to convert ArrayBuffer to Base64
-function arrayBufferToBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  bytes.forEach(byte => binary += String.fromCharCode(byte));
-  return window.btoa(binary);
-}
-
 // Create global instance
 const pushNotificationHelper = new PushNotificationHelper();
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('Initializing push notifications...');
+  console.log('Initializing push notifications with Story API...');
   
   try {
     await pushNotificationHelper.init();
